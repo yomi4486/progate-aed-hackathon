@@ -33,7 +33,7 @@ provider "aws" {
       iam        = var.localstack_endpoint
       sts        = var.localstack_endpoint
       kinesis    = var.localstack_endpoint
-      es         = var.localstack_endpoint # legacy for opensearch
+      es         = var.localstack_endpoint # legacy for opensearch 
       opensearch = var.localstack_endpoint
     }
   }
