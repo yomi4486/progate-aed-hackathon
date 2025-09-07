@@ -27,8 +27,7 @@ resource "aws_dynamodb_table" "url_states" {
   }
 
   ttl {
-    enabled        = false
-    attribute_name = "ttl"
+    enabled = false
   }
 }
 

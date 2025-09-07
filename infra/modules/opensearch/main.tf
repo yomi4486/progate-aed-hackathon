@@ -13,7 +13,7 @@ resource "aws_opensearch_domain" "this" {
   engine_version = local.engine_version
 
   cluster_config {
-    instance_type  = var.use_localstack ? "t3.small.search" : "t3.small.search"
+    instance_type  = var.use_localstack ? "t3.micro.search" : "t3.small.search"
     instance_count = 1
   }
 
@@ -29,21 +29,21 @@ resource "aws_opensearch_domain" "this" {
   }
 
   advanced_security_options {
-    enabled                        = false
-    internal_user_database_enabled = false
+    enabled                        = var.use_localstack ? false : true
+    internal_user_database_enabled = var.use_localstack ? false : true
   }
 
   node_to_node_encryption {
-    enabled = false
+    enabled = var.use_localstack ? false : true
   }
 
   encrypt_at_rest {
-    enabled = false
+    enabled = var.use_localstack ? false : true
   }
 
   domain_endpoint_options {
-    enforce_https       = false
-    tls_security_policy = "Policy-Min-TLS-1-0-2019-07"
+    enforce_https       = var.use_localstack ? false : true
+    tls_security_policy = var.use_localstack ? "Policy-Min-TLS-1-0-2019-07" : "Policy-Min-TLS-1-2-2019-07"
   }
 
   tags = { Name = var.domain_name }

@@ -4,6 +4,9 @@ services:
     container_name: localstack_main
     ports:
       - "4566:4566"    # Edge port (all services)
+      - "4571:4571"
+      - "9200:9200"
+      - "3306:3306"
       - "8080:8080"    # Web UI (optional)
     environment:
       SERVICES: "s3,dynamodb,sqs,opensearch,iam,logs,lambda,sns"
