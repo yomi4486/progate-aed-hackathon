@@ -1,0 +1,33 @@
+# version: '3.8' # ✨ 超絶キラキラ・イケイケ・バージョンでパネエ！🚀🌈
+services: # 🛠️ サービスたち大集合！🎉
+  localstack: # 🐳 LocalStackコンテナ！AWSの魔法をローカルで✨
+    image: localstack/localstack:latest # 🖼️ LocalStackの最新イメージ！
+    container_name: localstack_main # 📦 コンテナ名はlocalstack_main！
+    ports:
+      - "4566:4566"            # 🌐 4566: すべてのサービスのエッジポート！
+      - "4571:4571"            # 🦸‍♂️ 4571: レガシーLambda用（使う？使わない？）
+      - "9200:9200"            # 🔍 9200: OpenSearchで検索しまくり！
+      - "3306:3306"            # 🐬 3306: Aurora MySQLでDBもバッチリ！
+      - "8080:8080"            # 🖥️ LocalStackダッシュボード
+    environment:
+      - SERVICES=s3,dynamodb,lambda,sqs,opensearch,aurora,iam,logs,sns # 🛎️ 有効化サービス一覧！必要に応じて追加OK！
+      - DEBUG=1 # 🐞 デバッグON！困ったらこれ！
+      - DATA_DIR=/tmp/localstack/data # 💾 データ永続化で安心！
+      - LAMBDA_EXECUTOR=docker # 🐳 LambdaはDockerで実行！
+      - DOCKER_HOST=unix:///var/run/docker.sock # 🛠️ Docker連携！
+      - AWS_DEFAULT_REGION=as-northeast-1
+      - AWS_ACCESS_KEY_ID=123456789
+      - AWS_SECRET_ACCESS_KEY=123456789
+      - LOCALSTACK_URL=http://localstack:4566
+    healthcheck:
+      test: nc -z 127.0.0.1 4566
+      interval: "5s"
+      timeout: "5s"
+      start_period: "10s"
+      retries: 3
+    volumes:
+      - "localstack_data:/var/lib/localstack" # 📂 データ保存用ボリューム！
+      - "/var/run/docker.sock:/var/run/docker.sock" # 🐳 Dockerソケット共有！
+
+volumes:
+  localstack_data: # 📦 データ永続化ボリューム！安心
