@@ -1,0 +1,17 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+terraform.tfvars
+*.tfvars.json
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+infra/tfplan
+
+# LocalStack
+localstack_data/
+.DS_Store

@@ -1,0 +1,33 @@
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack_main
+    ports:
+      - "4566:4566"    # Edge port (all services)
+      - "4571:4571"
+      - "9200:9200"
+      - "3306:3306"
+      - "8080:8080"    # Web UI (optional)
+    environment:
+      SERVICES: "s3,dynamodb,sqs,opensearch,iam,logs,lambda,sns"
+      DEBUG: "1"
+      USE_SSL: "0"
+      AWS_DEFAULT_REGION: "ap-northeast-1"
+      AWS_ACCESS_KEY_ID: "test"
+      AWS_SECRET_ACCESS_KEY: "test"
+      HOSTNAME_EXTERNAL: "localhost"   # Ensure generated service URLs use localhost
+      DATA_DIR: "/var/lib/localstack"  # Persist state inside container
+      LAMBDA_EXECUTOR: "docker"
+      DOCKER_HOST: "unix:///var/run/docker.sock"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:4566/health | grep -q edge"]
+      interval: "5s"
+      timeout: "5s"
+      start_period: "10s"
+      retries: 5
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  localstack_data:
