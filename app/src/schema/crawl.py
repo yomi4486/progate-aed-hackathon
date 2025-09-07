@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
+
+from .common import Lang
 
 
 class CrawlResult(BaseModel):
@@ -19,7 +21,7 @@ class ParsedContent(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     body_text: str
-    lang: Optional[str] = None
+    lang: Optional[Lang] = None
     published_at: Optional[datetime] = None
     metadata: dict = Field(default_factory=dict)
     parsed_s3_key: str
@@ -28,7 +30,7 @@ class ParsedContent(BaseModel):
 class URLState(BaseModel):
     url_hash: str
     domain: str
-    last_crawled: Optional[int] = None
+    last_crawled: Optional[datetime] = None
     state: Literal["pending", "in_progress", "done", "failed"] = Field(
         "pending", description="pending|in_progress|done|failed"
     )
