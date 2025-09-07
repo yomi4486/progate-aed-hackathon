@@ -16,8 +16,8 @@ services: # 🛠️ サービスたち大集合！🎉
       - LAMBDA_EXECUTOR=docker # 🐳 LambdaはDockerで実行！
       - DOCKER_HOST=unix:///var/run/docker.sock # 🛠️ Docker連携！
       - AWS_DEFAULT_REGION=ap-northeast-1
-      - AWS_ACCESS_KEY_ID=123456789
-      - AWS_SECRET_ACCESS_KEY=123456789
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
       - LOCALSTACK_URL=http://localstack:4566
     healthcheck:
       test: nc -z 127.0.0.1 4566
