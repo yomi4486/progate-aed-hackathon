@@ -15,4 +15,4 @@ tf-destroy:
 	cd infra && terraform destroy -auto-approve -var-file=devlocal.tfvars
 
 pydantic2ts:
-	uv run pydantic2ts ./app/src/schema ./frontend/types
+	uv run pydantic2ts ./app/src/schema ./frontend/src/types
