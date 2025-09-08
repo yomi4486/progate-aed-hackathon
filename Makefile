@@ -1,11 +1,9 @@
-.PHONY: run # 🚀✨ キラキラターゲット宣言！
+.PHONY: run tf-init tf-apply tf-destroy
 
 # 🌟 LocalStackを華麗に起動！AWSをローカルで再現しよう！🦄🌈
 run:
 	@echo "🌟 LocalStackを起動中... AWSの魔法をローカルで体験！🪄🐳"
 	docker-compose -f localstack/docker-compose.yml up -d # 🐳 LocalStackコンテナをバックグラウンドで起動！
-
-.PHONY: tf-init tf-apply tf-destroy
 
 tf-init:
 	cd infra && terraform init -backend=false
