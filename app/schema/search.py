@@ -24,7 +24,7 @@ class SearchHit(BaseModel):
     lang: Lang
     score: float
     snippet: Optional[str] = None
-    highlights: List[Highlight] = Field(default_factory=list)
+    highlights: List[Highlight] = Field(default_factory=list[Highlight])
 
 
 class SearchResponse(BaseModel):
