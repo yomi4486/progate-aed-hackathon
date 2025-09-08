@@ -1,4 +1,4 @@
-.PHONY: run tf-init tf-apply tf-destroy
+.PHONY: run tf-init tf-apply tf-destroy # 🚀✨ キラキラターゲット宣言！
 
 # 🌟 LocalStackを華麗に起動！AWSをローカルで再現しよう！🦄🌈
 run:
