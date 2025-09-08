@@ -1,0 +1,63 @@
+name: pydantic2ts
+
+on:
+  push:
+    # 全ブランチ対象
+
+permissions:
+  contents: write
+
+jobs:
+  generate-types:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up GitHub App authentication
+        id: app-auth
+        uses: tibdex/github-app-token@v2
+        with:
+          app_id: ${{ secrets.GH_APP_ID }}
+          private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Sync dependencies
+        run: |
+          uv --version
+          uv sync --dev
+        env:
+          GITHUB_TOKEN: ${{ steps.app-auth.outputs.token }}
+
+      - name: Generate TypeScript from Pydantic models
+        shell: bash
+        run: |
+          source .venv/bin/activate
+          make pydantic2ts
+
+      - name: Apply changes
+        shell: bash
+        env:
+          GH_APP_TOKEN: ${{ steps.app-auth.outputs.token }}
+        run: |
+          # 変更があればコミットしてプッシュ
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.name "pydantic2ts bot"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "chore(types): update pydantic-generated TS [skip ci]"
+            BRANCH_NAME="${GITHUB_REF_NAME}"
+            git push "https://x-access-token:${GH_APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:"${BRANCH_NAME}"
+          else
+            echo "No changes to commit"
+          fi

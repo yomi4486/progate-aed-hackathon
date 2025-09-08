@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
@@ -23,7 +23,7 @@ class ParsedContent(BaseModel):
     body_text: str
     lang: Optional[Lang] = None
     published_at: Optional[datetime] = None
-    metadata: dict = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     parsed_s3_key: str
 
 

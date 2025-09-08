@@ -1,5 +1,12 @@
-from .common import (ErrorResponse, HealthStatus, Highlight, Lang, Pagination,
-                     Snippet, TimeWindow)
+from .common import (
+    ErrorResponse,
+    HealthStatus,
+    Highlight,
+    Lang,
+    Pagination,
+    Snippet,
+    TimeWindow,
+)
 from .crawl import CrawlResult, ParsedContent, URLState
 from .document import Document, IndexReadyDocument
 from .search import SearchHit, SearchQuery, SearchResponse, SuggestResponse
