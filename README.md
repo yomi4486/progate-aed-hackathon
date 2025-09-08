@@ -1,3 +1,1 @@
-<div>
-<iframe width="560" height="315" src="https://www.youtube.com/embed/s6gr7Ljl0x8?si=rbQJfa4-DEEDu6rx" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-</div>
+# [![テンアゲ](https://img.youtube.com/vi/s6gr7Ljl0x8/default.jpg)](https://www.youtube.com/watch?v=s6gr7Ljl0x8)
