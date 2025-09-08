@@ -3,6 +3,9 @@ name: pydantic2ts
 on:
   push:
     # 全ブランチ対象
+    paths:
+      - 'app/src/schema/**'
+      - 'tools/pydantic2ts/**'
 
 permissions:
   contents: write
