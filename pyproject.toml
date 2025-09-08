@@ -1,0 +1,11 @@
+[project]
+name = "progate-aed-hackathon"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "boto3>=1.40.25",
+    "pydantic>=2.11.7",
+    "pynamodb>=6.1.0",
+]
