@@ -26,3 +26,4 @@ __pycache__/
 .pytype/
 .pyright/
 .venv/
+.ruff_cache/
