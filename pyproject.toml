@@ -12,6 +12,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "boto3-stubs[dynamodb,essential]>=1.40.26",
     "progate-aed-hackathon",
     "pyright>=1.1.405",
     "ruff>=0.12.12",

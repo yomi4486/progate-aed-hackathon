@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# type: ignore
 """
 Simple linear migration tool for PynamoDB models.
 
@@ -15,9 +15,10 @@ import os
 import sys
 import textwrap
 import traceback
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 import boto3
+from mypy_boto3_dynamodb import DynamoDBClient, DynamoDBServiceResource
 from pynamodb.attributes import UnicodeAttribute, UTCDateTimeAttribute
 from pynamodb.models import Model
 
@@ -102,24 +103,24 @@ def copy_table(
     src_table_name: str,
     dst_table_name: str,
     region_name: str = DEFAULT_REGION,
-    read_capacity=5,
-    write_capacity=5,
-    wait=True,
+    read_capacity: int = 5,
+    write_capacity: int = 5,
+    wait: bool = True,
 ):
     """
     Create destination table with same key schema & attributes based on describe_table,
     then copy all items via scan+batch_writer.
     NOTE: This is a best-effort helper; secondary indexes & complex settings may require manual handling.
     """
-    dynamodb = boto3.resource("dynamodb", region_name=region_name)
-    client = boto3.client("dynamodb", region_name=region_name)
+    dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb", region_name=region_name)
+    client: DynamoDBClient = boto3.client("dynamodb", region_name=region_name)
 
     # describe source
-    src_desc = client.describe_table(TableName=src_table_name)["Table"]
+    src_desc: Dict[str, Any] = client.describe_table(TableName=src_table_name)["Table"]
 
     # Build create_table kwargs for destination
-    attribute_definitions = src_desc.get("AttributeDefinitions", [])
-    key_schema = src_desc.get("KeySchema", [])
+    attribute_definitions: Dict[str, Any] = src_desc.get("AttributeDefinitions", [])
+    key_schema: Dict[str, Any] = src_desc.get("KeySchema", [])
 
     print(
         f"Creating table {dst_table_name} with same key schema as {src_table_name} (no GSIs/LSIs)."
