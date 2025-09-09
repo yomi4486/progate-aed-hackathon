@@ -95,11 +95,13 @@ down_revision = "{down_revision}"
 
 def upgrade():
     """Add attribute '{attr_name}' by creating a new table and copying data automatically."""
+
     # 旧テーブル
     class Old{class_name}(Model):
         class Meta:  # type: ignore
             table_name = "{table_name}"
             region = "{region}"
+
     # Existing attributes
 {old_attributes}
 
@@ -108,6 +110,7 @@ def upgrade():
         class Meta:  # type: ignore
             table_name = "{table_name}"
             region = "{region}"
+
     # Existing attributes plus new attribute
 {new_attributes}
     # 新テーブル作成
@@ -127,11 +130,13 @@ def upgrade():
 
 def downgrade():
     """Remove attribute '{attr_name}' by copying data to a table without the attribute."""
+
     # 旧テーブル
     class Old{class_name}(Model):
         class Meta:  # type: ignore
             table_name = "{table_name}"
             region = "{region}"
+
         # Existing attributes (including the attribute to be removed)
 {new_attributes}
 
@@ -140,6 +145,7 @@ def downgrade():
         class Meta:  # type: ignore
             table_name = "{table_name}"
             region = "{region}"
+
         # Existing attributes (without the attribute to be removed)
 {old_attributes}
 
