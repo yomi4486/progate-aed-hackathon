@@ -200,9 +200,7 @@ def _render_add_attr(
     attr_name, attr_type = extra.split(":", 1)
 
     old_attributes = _format_attributes(attributes, hash_key_name, indent=8)
-    new_attributes = _format_attributes(
-        attributes + [{"name": attr_name, "type": attr_type}], hash_key_name, indent=8
-    )
+    new_attributes = _format_attributes(attributes + [{"name": attr_name, "type": attr_type}], hash_key_name, indent=8)
     attribute_args = _format_attribute_args(attributes)
 
     return _ADD_ATTR_TEMPLATE.format(

@@ -91,11 +91,7 @@ def process_file(file_path: str, output_dir: str, base_dir: str) -> None:
     package_name = os.path.basename(base_dir)
     rel = os.path.splitext(os.path.relpath(file_path, base_dir))[0]
     module_rel = rel.replace(os.sep, ".")
-    module_name = (
-        package_name
-        if module_rel in ("", "__init__")
-        else f"{package_name}.{module_rel}"
-    )
+    module_name = package_name if module_rel in ("", "__init__") else f"{package_name}.{module_rel}"
 
     # インポート元を把握する
     defined_literal_aliases: set[str] = set()
@@ -109,9 +105,7 @@ def process_file(file_path: str, output_dir: str, base_dir: str) -> None:
             if isinstance(node, ast.Assign):
                 if isinstance(node.value, ast.Subscript):
                     target = node.value.value
-                    is_literal = (
-                        isinstance(target, ast.Name) and target.id == "Literal"
-                    ) or (
+                    is_literal = (isinstance(target, ast.Name) and target.id == "Literal") or (
                         isinstance(target, ast.Attribute) and target.attr == "Literal"
                     )
                     if is_literal:
@@ -124,9 +118,7 @@ def process_file(file_path: str, output_dir: str, base_dir: str) -> None:
                 for alias in node.names:
                     local_name = alias.asname or alias.name
                     if local_name:
-                        imported_from[local_name] = base or imported_from.get(
-                            local_name, ""
-                        )
+                        imported_from[local_name] = base or imported_from.get(local_name, "")
     except Exception:
         pass
 
@@ -225,9 +217,7 @@ def process_file(file_path: str, output_dir: str, base_dir: str) -> None:
 
     for name, obj in module_vars.items():
         if name in defined_literal_aliases and get_origin(obj) is Literal:
-            lits = " | ".join(
-                [f'"{a}"' if isinstance(a, str) else str(a) for a in get_args(obj)]
-            )
+            lits = " | ".join([f'"{a}"' if isinstance(a, str) else str(a) for a in get_args(obj)])
             output.append(f"export type {name} = {lits};")
 
     # 参照追跡とモデルの出力
@@ -264,9 +254,7 @@ def process_file(file_path: str, output_dir: str, base_dir: str) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Generate TypeScript definitions from Pydantic models."
-    )
+    parser = argparse.ArgumentParser(description="Generate TypeScript definitions from Pydantic models.")
     parser.add_argument(
         "input_dir",
         help="Directory containing Python files with Pydantic models.",
