@@ -208,18 +208,16 @@ def upgrade():
         class Meta:
             table_name = "{table_name}"
             region = "{region}"
-        id = UnicodeAttribute(hash_key=True)
-        email = UnicodeAttribute()
+        # Existing attributes
+{old_attributes}
 
     # 新テーブル
     class New{class_name}(Model):
         class Meta:
             table_name = "{table_name}"
             region = "{region}"
-        id = UnicodeAttribute(hash_key=True)
-        email = UnicodeAttribute()
-        {attr_name} = {attr_type}(null=True)
-
+        # Existing attributes plus new attribute
+{new_attributes}
     # 新テーブル作成
     if not New{class_name}.exists():
         New{class_name}.create_table(billing_mode='PAY_PER_REQUEST', wait=True)
