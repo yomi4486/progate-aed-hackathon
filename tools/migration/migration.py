@@ -363,9 +363,7 @@ def upgrade(target_revision: Optional[str] = None):
     # construct ordered list of (revision, filepath)
     rev_file = []
     for fname in files:
-        rev = (
-            os.path.splitext(fname)[0].split("_", 2)[0] + "_" + os.path.splitext(fname)[0].split("_", 2)[1]
-        )
+        rev = parse_revision_from_filename(fname)
         rev_file.append((rev, os.path.join(MIGRATIONS_DIR, fname)))
     rev_file.sort()
 
@@ -401,9 +399,7 @@ def downgrade(target_revision: Optional[str] = None):
     # build ordered list
     rev_file = []
     for fname in files:
-        rev = (
-            os.path.splitext(fname)[0].split("_", 2)[0] + "_" + os.path.splitext(fname)[0].split("_", 2)[1]
-        )
+        rev = parse_revision_from_filename(fname)
         rev_file.append((rev, os.path.join(MIGRATIONS_DIR, fname)))
     rev_file.sort()
     applied = get_applied_revisions()
