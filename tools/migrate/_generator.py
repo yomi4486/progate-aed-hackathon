@@ -112,11 +112,11 @@ def upgrade():
 {new_attributes}
     # 新テーブル作成
     if not New{class_name}.exists():
-        New{class_name}.create_table(billing_mode='PAY_PER_REQUEST', wait=True)
+        New{class_name}.create_table(billing_mode="PAY_PER_REQUEST", wait=True)
 
     # 旧テーブルから新テーブルへデータコピー
     for user in Old{class_name}.scan():
-        New{class_name}({attribute_args}, {attr_name}=getattr(user, '{attr_name}', None)).save()
+        New{class_name}({attribute_args}, {attr_name}=getattr(user, "{attr_name}", None)).save()
 
     # 旧テーブル削除
     if Old{class_name}.exists():
@@ -145,7 +145,7 @@ def downgrade():
 
     # 新テーブル作成
     if not New{class_name}.exists():
-        New{class_name}.create_table(billing_mode='PAY_PER_REQUEST', wait=True)
+        New{class_name}.create_table(billing_mode="PAY_PER_REQUEST", wait=True)
 
     # データコピー
     for user in Old{class_name}.scan():
