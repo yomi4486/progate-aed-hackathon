@@ -63,9 +63,8 @@ def list_migration_files() -> List[str]:
 
 def parse_revision_from_filename(fname: str) -> str:
     # assumes filename starts with revision
-    return (
-        os.path.splitext(fname)[0].split("_", 2)[0] + "_" + os.path.splitext(fname)[0].split("_", 2)[1]
-    )
+    parts = os.path.splitext(fname)[0].split("_", 2)
+    return parts[0] + "_" + parts[1]
 
 
 def import_migration_module(filepath: str):
