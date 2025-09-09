@@ -165,7 +165,7 @@ def copy_table(
 # --- File templates ---
 CREATE_TEMPLATE = """\
 from pynamodb.models import Model
-from pynamodb.attributes import UnicodeAttribute, NumberAttribute
+from pynamodb.attributes import {attr_imports}
 
 revision = "{revision}"
 down_revision = {down_revision_repr}
@@ -176,7 +176,7 @@ class {class_name}(Model):
         table_name = "{table_name}"
         region = "{region}"
 
-    id = UnicodeAttribute(hash_key=True)  # 主キー属性を自動追加
+    {hash_key_name} = {hash_key_type}(hash_key=True)  # 主キー属性
 
     # 他の属性は add コマンドで追加してください
 
@@ -274,13 +274,16 @@ def create_migration_file(
     table_name: str,
     extra: Optional[str] = None,
     down_rev: Optional[str] = None,
+    hash_key_name: str = "id",
+    hash_key_type: str = "UnicodeAttribute",
+    attr_imports: str = "UnicodeAttribute, NumberAttribute"
 ):
     revision = now_revision_str()
     fname = f"{revision}_{action}_{table_name}.py"
     path = os.path.join(MIGRATIONS_DIR, fname)
 
     down_revision_repr = f'"{down_rev}"' if down_rev else "None"
-    class_name = table_name.capitalize()  # naive
+    class_name = table_name.capitalize()
     region = DEFAULT_REGION
 
     if action == "create":
@@ -290,6 +293,9 @@ def create_migration_file(
             class_name=class_name,
             table_name=table_name,
             region=region,
+            hash_key_name=hash_key_name,
+            hash_key_type=hash_key_type,
+            attr_imports=attr_imports,
         )
     elif action in ("add", "remove", "update"):
         # extra expected: "age:Number"
@@ -432,9 +438,12 @@ def main(argv):
     cmd = argv[1]
     if cmd == "create":
         if len(argv) < 3:
-            print("Usage: create <table_name>")
+            print("Usage: create <table_name> [hash_key_name] [hash_key_type]")
             return
         table_name = argv[2]
+        hash_key_name = argv[3] if len(argv) >= 4 else "id"
+        hash_key_type = argv[4] if len(argv) >= 5 else "UnicodeAttribute"
+        attr_imports = "UnicodeAttribute, NumberAttribute, BooleanAttribute, UTCDateTimeAttribute"
         # determine last revision
         files = list_migration_files()
         last_rev = None
@@ -443,7 +452,10 @@ def main(argv):
             last_rev = (
                 os.path.splitext(last_fname)[0].split("_", 2)[0] + "_" + os.path.splitext(last_fname)[0].split("_", 2)[1]
             )
-        path = create_migration_file("create", table_name, down_rev=last_rev)
+        path = create_migration_file(
+            "create", table_name, down_rev=last_rev,
+            hash_key_name=hash_key_name, hash_key_type=hash_key_type, attr_imports=attr_imports
+        )
         print(path)
     elif cmd == "add":
         if len(argv) < 4:
