@@ -1,6 +1,6 @@
 [flake8]
 
-ignore=W503
+extend-ignore=W503
 max-line-length = 120
 
 exclude = 
