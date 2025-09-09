@@ -52,8 +52,7 @@ def _format_attributes(
 
 
 # --- Templates ---
-_CREATE_TEMPLATE = '''\
-# mypy: ignore-errors
+_CREATE_TEMPLATE = '''# mypy: ignore-errors
 from pynamodb.models import Model
 from pynamodb.attributes import {attr_imports}  # type: ignore # noqa: F401
 
@@ -84,8 +83,7 @@ def downgrade():
 '''
 
 
-_ADD_ATTR_TEMPLATE = '''
-# mypy: ignore-errors
+_ADD_ATTR_TEMPLATE = '''# mypy: ignore-errors
 from pynamodb.models import Model
 from pynamodb.attributes import UnicodeAttribute, NumberAttribute, BooleanAttribute  # type: ignore # noqa: F401
 
