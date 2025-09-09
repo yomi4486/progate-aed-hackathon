@@ -236,7 +236,7 @@ def upgrade():
     if Old{class_name}.exists():
         Old{class_name}.delete_table()
 
-    print("新テーブル {table_name}_new へデータコピー完了。旧テーブルは自動削除されました。")
+    print(f"Data copy to new table '{table_name}' completed. Old table has been automatically deleted.")
 
 
 def downgrade():
@@ -268,7 +268,7 @@ def downgrade():
     if Old{class_name}.exists():
         Old{class_name}.delete_table()
 
-    print("元のテーブル {table_name} へデータコピー完了。newテーブルは自動削除されました。")
+    print(f"Data copied to the original table {table_name}. The temporary table {table_name}_new has been deleted automatically.")
 """
 
 
@@ -442,8 +442,13 @@ def downgrade(target_revision: Optional[str] = None):
             mod.downgrade()
             remove_revision_record(rev)
             print(f"Reverted {rev}")
-        except Exception as e:
+        except (ImportError, AttributeError, RuntimeError) as e:
             print(f"Error reverting {rev}: {e}")
+            traceback.print_exc()
+            sys.exit(1)
+        except Exception as e:
+            # Unexpected exception, print and exit
+            print(f"Unexpected error reverting {rev}: {e}")
             traceback.print_exc()
             sys.exit(1)
 
