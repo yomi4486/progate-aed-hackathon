@@ -9,16 +9,17 @@ Usage:
   python migration.py downgrade [<target_revision>]
 """
 
+import datetime
+import importlib.util
 import os
 import sys
-import importlib.util
-import datetime
 import textwrap
 import traceback
 from typing import List, Optional
+
 import boto3
-from pynamodb.models import Model
 from pynamodb.attributes import UnicodeAttribute, UTCDateTimeAttribute
+from pynamodb.models import Model
 
 # --- Config ---
 MIGRATIONS_DIR = os.path.join(os.getcwd(), "migrations")
