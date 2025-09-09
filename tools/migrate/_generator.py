@@ -52,8 +52,7 @@ def _format_attributes(
 
 
 # --- Templates ---
-_CREATE_TEMPLATE = '''\
-# mypy: ignore-errors
+_CREATE_TEMPLATE = '''# mypy: ignore-errors
 from pynamodb.models import Model
 from pynamodb.attributes import {attr_imports}  # type: ignore # noqa: F401
 
@@ -84,8 +83,7 @@ def downgrade():
 '''
 
 
-_ADD_ATTR_TEMPLATE = '''
-# mypy: ignore-errors
+_ADD_ATTR_TEMPLATE = '''# mypy: ignore-errors
 from pynamodb.models import Model
 from pynamodb.attributes import UnicodeAttribute, NumberAttribute, BooleanAttribute  # type: ignore # noqa: F401
 
@@ -95,12 +93,14 @@ down_revision = "{down_revision}"
 
 def upgrade():
     """Add attribute '{attr_name}' by creating a new table and copying data automatically."""
+
     # 旧テーブル
     class Old{class_name}(Model):
         class Meta:  # type: ignore
             table_name = "{table_name}"
             region = "{region}"
-    # Existing attributes
+
+        # Existing attributes
 {old_attributes}
 
     # 新テーブル
@@ -108,15 +108,17 @@ def upgrade():
         class Meta:  # type: ignore
             table_name = "{table_name}"
             region = "{region}"
-    # Existing attributes plus new attribute
+
+        # Existing attributes plus new attribute
 {new_attributes}
+
     # 新テーブル作成
     if not New{class_name}.exists():
-        New{class_name}.create_table(billing_mode='PAY_PER_REQUEST', wait=True)
+        New{class_name}.create_table(billing_mode="PAY_PER_REQUEST", wait=True)
 
     # 旧テーブルから新テーブルへデータコピー
     for user in Old{class_name}.scan():
-        New{class_name}({attribute_args}, {attr_name}=getattr(user, '{attr_name}', None)).save()
+        New{class_name}({attribute_args}, {attr_name}=getattr(user, "{attr_name}", None)).save()
 
     # 旧テーブル削除
     if Old{class_name}.exists():
@@ -127,11 +129,13 @@ def upgrade():
 
 def downgrade():
     """Remove attribute '{attr_name}' by copying data to a table without the attribute."""
+
     # 旧テーブル
     class Old{class_name}(Model):
         class Meta:  # type: ignore
             table_name = "{table_name}"
             region = "{region}"
+
         # Existing attributes (including the attribute to be removed)
 {new_attributes}
 
@@ -140,12 +144,13 @@ def downgrade():
         class Meta:  # type: ignore
             table_name = "{table_name}"
             region = "{region}"
+
         # Existing attributes (without the attribute to be removed)
 {old_attributes}
 
     # 新テーブル作成
     if not New{class_name}.exists():
-        New{class_name}.create_table(billing_mode='PAY_PER_REQUEST', wait=True)
+        New{class_name}.create_table(billing_mode="PAY_PER_REQUEST", wait=True)
 
     # データコピー
     for user in Old{class_name}.scan():
@@ -200,9 +205,7 @@ def _render_add_attr(
     attr_name, attr_type = extra.split(":", 1)
 
     old_attributes = _format_attributes(attributes, hash_key_name, indent=8)
-    new_attributes = _format_attributes(
-        attributes + [{"name": attr_name, "type": attr_type}], hash_key_name, indent=8
-    )
+    new_attributes = _format_attributes(attributes + [{"name": attr_name, "type": attr_type}], hash_key_name, indent=8)
     attribute_args = _format_attribute_args(attributes)
 
     return _ADD_ATTR_TEMPLATE.format(

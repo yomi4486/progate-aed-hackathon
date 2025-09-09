@@ -50,9 +50,7 @@ class MigrationHistory(Model):
 # --- Migration history helpers ---
 def ensure_migration_history_table():
     if not MigrationHistory.exists():
-        MigrationHistory.create_table(
-            read_capacity_units=1, write_capacity_units=1, wait=True
-        )
+        MigrationHistory.create_table(read_capacity_units=1, write_capacity_units=1, wait=True)
 
 
 # --- Helpers ---
@@ -118,9 +116,7 @@ def copy_table(
     then copy all items via scan+batch_writer.
     NOTE: This is a best-effort helper; secondary indexes & complex settings may require manual handling.
     """
-    dynamodb: DynamoDBServiceResource = boto3.resource(
-        "dynamodb", region_name=region_name
-    )
+    dynamodb: DynamoDBServiceResource = boto3.resource("dynamodb", region_name=region_name)
     client: DynamoDBClient = boto3.client("dynamodb", region_name=region_name)
 
     # describe source
@@ -130,9 +126,7 @@ def copy_table(
     attribute_definitions: Dict[str, Any] = src_desc.get("AttributeDefinitions", [])
     key_schema: Dict[str, Any] = src_desc.get("KeySchema", [])
 
-    print(
-        f"Creating table {dst_table_name} with same key schema as {src_table_name} (no GSIs/LSIs)."
-    )
+    print(f"Creating table {dst_table_name} with same key schema as {src_table_name} (no GSIs/LSIs).")
     create_kwargs = {
         "TableName": dst_table_name,
         "KeySchema": key_schema,
@@ -273,18 +267,14 @@ def _cmd_create(args: argparse.Namespace) -> None:
     table_name: str = args.table_name
     hash_key_name: str = args.hash_key_name or "id"
     hash_key_type: str = args.hash_key_type or "UnicodeAttribute"
-    attr_imports = (
-        "UnicodeAttribute, NumberAttribute, BooleanAttribute, UTCDateTimeAttribute"
-    )
+    attr_imports = "UnicodeAttribute, NumberAttribute, BooleanAttribute, UTCDateTimeAttribute"
 
     files = list_migration_files()
     last_rev = None
     if files:
         last_fname = files[-1]
         last_rev = (
-            os.path.splitext(last_fname)[0].split("_", 2)[0]
-            + "_"
-            + os.path.splitext(last_fname)[0].split("_", 2)[1]
+            os.path.splitext(last_fname)[0].split("_", 2)[0] + "_" + os.path.splitext(last_fname)[0].split("_", 2)[1]
         )
 
     path = create_migration_file(
@@ -307,9 +297,7 @@ def _cmd_add(args: argparse.Namespace) -> None:
     if files:
         last_fname = files[-1]
         last_rev = (
-            os.path.splitext(last_fname)[0].split("_", 2)[0]
-            + "_"
-            + os.path.splitext(last_fname)[0].split("_", 2)[1]
+            os.path.splitext(last_fname)[0].split("_", 2)[0] + "_" + os.path.splitext(last_fname)[0].split("_", 2)[1]
         )
 
     path = create_migration_file("add", table_name, extra=extra, down_rev=last_rev)
@@ -368,9 +356,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_add.set_defaults(func=_cmd_add)
 
     # upgrade
-    p_up = subparsers.add_parser(
-        "upgrade", help="Apply migrations up to target (inclusive)"
-    )
+    p_up = subparsers.add_parser("upgrade", help="Apply migrations up to target (inclusive)")
     p_up.add_argument(
         "target_revision",
         nargs="?",
