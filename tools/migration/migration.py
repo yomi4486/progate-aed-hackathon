@@ -446,8 +446,13 @@ def downgrade(target_revision: Optional[str] = None):
             mod.downgrade()
             remove_revision_record(rev)
             print(f"Reverted {rev}")
-        except Exception as e:
+        except (ImportError, AttributeError, RuntimeError) as e:
             print(f"Error reverting {rev}: {e}")
+            traceback.print_exc()
+            sys.exit(1)
+        except Exception as e:
+            # Unexpected exception, print and exit
+            print(f"Unexpected error reverting {rev}: {e}")
             traceback.print_exc()
             sys.exit(1)
 
