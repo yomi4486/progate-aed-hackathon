@@ -30,3 +30,4 @@ progate-aed-hackathon = { workspace = true }
 
 [project.scripts]
 pydantic2ts = "tools.pydantic2ts.__main__:main"
+migrate = "tools.migrate.__main__:main"
