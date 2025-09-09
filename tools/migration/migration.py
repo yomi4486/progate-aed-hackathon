@@ -146,7 +146,7 @@ def copy_table(
     print("Starting items copy (scan -> batch_writer).")
     response = src_table.scan()
     items = response.get("Items", [])
-    with dst_table.batch_writer(overwrite_by_pkeys=None) as bw:
+    with dst_table.batch_writer() as bw:
         for it in items:
             bw.put_item(Item=it)
 
