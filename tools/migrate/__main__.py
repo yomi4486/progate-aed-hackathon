@@ -171,15 +171,16 @@ def copy_table(
 
 # --- File templates ---
 CREATE_TEMPLATE = """\
+# mypy: ignore-errors
 from pynamodb.models import Model
-from pynamodb.attributes import {attr_imports}
+from pynamodb.attributes import {attr_imports}  # type: ignore # noqa: F401
 
 revision = "{revision}"
 down_revision = {down_revision_repr}
 
 
 class {class_name}(Model):
-    class Meta:
+    class Meta:  # type: ignore
         table_name = "{table_name}"
         region = "{region}"
 
@@ -207,8 +208,9 @@ def format_attribute_args(attributes: List[Dict[str, str]]) -> str:
 
 
 ADD_ATTR_TEMPLATE = """
+# mypy: ignore-errors
 from pynamodb.models import Model
-from pynamodb.attributes import UnicodeAttribute, NumberAttribute, BooleanAttribute
+from pynamodb.attributes import UnicodeAttribute, NumberAttribute, BooleanAttribute  # type: ignore # noqa: F401
 
 revision = "{revision}"
 down_revision = "{down_revision}"
@@ -218,18 +220,18 @@ def upgrade():
     \"\"\"Add attribute '{attr_name}' by creating a new table and copying data automatically.\"\"\"
     # 旧テーブル
     class Old{class_name}(Model):
-        class Meta:
+        class Meta:  # type: ignore
             table_name = "{table_name}"
             region = "{region}"
-        # Existing attributes
+    # Existing attributes
 {old_attributes}
 
     # 新テーブル
     class New{class_name}(Model):
-        class Meta:
+        class Meta:  # type: ignore
             table_name = "{table_name}"
             region = "{region}"
-        # Existing attributes plus new attribute
+    # Existing attributes plus new attribute
 {new_attributes}
     # 新テーブル作成
     if not New{class_name}.exists():
@@ -243,24 +245,25 @@ def upgrade():
     if Old{class_name}.exists():
         Old{class_name}.delete_table()
 
-    print(f"Data copy to new table '{table_name}' completed. Old table has been automatically deleted.")
+    print("Data copy to new table '{table_name}' completed. Old table has been automatically deleted.")
 
 
 def downgrade():
     \"\"\"Remove attribute '{attr_name}' by copying data to a table without the attribute.\"\"\"
     # 旧テーブル
     class Old{class_name}(Model):
-        class Meta:
+        class Meta:  # type: ignore
             table_name = "{table_name}"
             region = "{region}"
-{old_attributes}
-    {attr_name} = {attr_type}(null=True)
+        # Existing attributes (including the attribute to be removed)
+{new_attributes}
 
     # 新テーブル（属性なし）
     class New{class_name}(Model):
-        class Meta:
+        class Meta:  # type: ignore
             table_name = "{table_name}"
             region = "{region}"
+        # Existing attributes (without the attribute to be removed)
 {old_attributes}
 
     # 新テーブル作成
@@ -275,18 +278,23 @@ def downgrade():
     if Old{class_name}.exists():
         Old{class_name}.delete_table()
 
-    print(f"Data copied to the original table {table_name}. The temporary table {table_name}_new has been deleted automatically.")
+    print("Data copied to the original table '{table_name}'. The temporary table has been deleted automatically.")
 """
 
 
 # --- Generator functions ---
-def format_attributes(attributes: List[Dict[str, str]], hash_key_name: str) -> str:
+def format_attributes(
+    attributes: List[Dict[str, str]],
+    hash_key_name: str,
+    indent: int = 4,
+) -> str:
+    pad = " " * indent
     lines = []
     for attr in attributes:
         if attr["name"] == hash_key_name:
-            lines.append(f"    {attr['name']} = {attr['type']}(hash_key=True)")
+            lines.append(f"{pad}{attr['name']} = {attr['type']}(hash_key=True)")
         else:
-            lines.append(f"    {attr['name']} = {attr['type']}()")
+            lines.append(f"{pad}{attr['name']} = {attr['type']}()")
     return "\n".join(lines)
 
 
@@ -332,9 +340,12 @@ def create_migration_file(
         if not extra:
             raise ValueError("extra attribute specification required for add/remove")
         attr_name, attr_type = extra.split(":", 1)
-        old_attributes = format_attributes(attributes, hash_key_name)
+        # Attribute declarations occur inside a class nested in a function; use 8-space indent
+        old_attributes = format_attributes(attributes, hash_key_name, indent=8)
         new_attributes = format_attributes(
-            attributes + [{"name": attr_name, "type": attr_type}], hash_key_name
+            attributes + [{"name": attr_name, "type": attr_type}],
+            hash_key_name,
+            indent=8,
         )
         attribute_args = format_attribute_args(attributes)
         content = ADD_ATTR_TEMPLATE.format(
