@@ -236,7 +236,7 @@ def upgrade():
     if Old{class_name}.exists():
         Old{class_name}.delete_table()
 
-    print("新テーブル {table_name}_new へデータコピー完了。旧テーブルは自動削除されました。")
+    print(f"Data copy to new table '{table_name}' completed. Old table has been automatically deleted.")
 
 
 def downgrade():
