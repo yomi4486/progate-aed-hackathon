@@ -102,7 +102,7 @@ def upgrade():
             table_name = "{table_name}"
             region = "{region}"
 
-    # Existing attributes
+        # Existing attributes
 {old_attributes}
 
     # 新テーブル
@@ -111,8 +111,9 @@ def upgrade():
             table_name = "{table_name}"
             region = "{region}"
 
-    # Existing attributes plus new attribute
+        # Existing attributes plus new attribute
 {new_attributes}
+
     # 新テーブル作成
     if not New{class_name}.exists():
         New{class_name}.create_table(billing_mode="PAY_PER_REQUEST", wait=True)
