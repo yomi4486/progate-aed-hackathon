@@ -193,6 +193,12 @@ def downgrade():
         {class_name}.delete_table()
 """
 
+
+def format_attribute_args(attributes: List[Dict[str, str]]) -> str:
+    # 例: id=user.id, email=user.email, ...
+    return ", ".join([f"{attr['name']}=user.{attr['name']}" for attr in attributes])
+
+
 ADD_ATTR_TEMPLATE = """
 from pynamodb.models import Model
 from pynamodb.attributes import UnicodeAttribute, NumberAttribute, BooleanAttribute
@@ -224,7 +230,7 @@ def upgrade():
 
     # 旧テーブルから新テーブルへデータコピー
     for user in Old{class_name}.scan():
-        New{class_name}(id=user.id, email=user.email, {attr_name}=getattr(user, '{attr_name}', None)).save()
+        New{class_name}({attribute_args}, {attr_name}=getattr(user, '{attr_name}', None)).save()
 
     # 旧テーブル削除
     if Old{class_name}.exists():
@@ -240,8 +246,7 @@ def downgrade():
         class Meta:
             table_name = "{table_name}"
             region = "{region}"
-        id = UnicodeAttribute(hash_key=True)
-        email = UnicodeAttribute()
+{old_attributes}
         {attr_name} = {attr_type}(null=True)
 
     # 新テーブル（属性なし）
@@ -249,8 +254,7 @@ def downgrade():
         class Meta:
             table_name = "{table_name}"
             region = "{region}"
-        id = UnicodeAttribute(hash_key=True)
-        email = UnicodeAttribute()
+{old_attributes}
 
     # 新テーブル作成
     if not New{class_name}.exists():
@@ -258,7 +262,7 @@ def downgrade():
 
     # データコピー
     for user in Old{class_name}.scan():
-        New{class_name}(id=user.id, email=user.email).save()
+        New{class_name}({attribute_args}).save()
 
     # 旧テーブル削除
     if Old{class_name}.exists():
@@ -269,6 +273,16 @@ def downgrade():
 
 
 # --- Generator functions ---
+def format_attributes(attributes: List[Dict[str, str]], hash_key_name: str) -> str:
+    lines = []
+    for attr in attributes:
+        if attr["name"] == hash_key_name:
+            lines.append(f'    {attr["name"]} = {attr["type"]}(hash_key=True)')
+        else:
+            lines.append(f'    {attr["name"]} = {attr["type"]}()')
+    return "\n".join(lines)
+
+
 def create_migration_file(
     action: str,
     table_name: str,
@@ -276,7 +290,8 @@ def create_migration_file(
     down_rev: Optional[str] = None,
     hash_key_name: str = "id",
     hash_key_type: str = "UnicodeAttribute",
-    attr_imports: str = "UnicodeAttribute, NumberAttribute"
+    attr_imports: str = "UnicodeAttribute, NumberAttribute, BooleanAttribute, UTCDateTimeAttribute",
+    attributes: Optional[List[Dict[str, str]]] = None
 ):
     revision = now_revision_str()
     fname = f"{revision}_{action}_{table_name}.py"
@@ -285,6 +300,9 @@ def create_migration_file(
     down_revision_repr = f'"{down_rev}"' if down_rev else "None"
     class_name = table_name.capitalize()
     region = DEFAULT_REGION
+
+    if attributes is None:
+        attributes = [{"name": hash_key_name, "type": hash_key_type}]
 
     if action == "create":
         content = CREATE_TEMPLATE.format(
@@ -298,10 +316,12 @@ def create_migration_file(
             attr_imports=attr_imports,
         )
     elif action in ("add", "remove", "update"):
-        # extra expected: "age:Number"
         if not extra:
             raise ValueError("extra attribute specification required for add/remove")
         attr_name, attr_type = extra.split(":", 1)
+        old_attributes = format_attributes(attributes, hash_key_name)
+        new_attributes = format_attributes(attributes + [{"name": attr_name, "type": attr_type}], hash_key_name)
+        attribute_args = format_attribute_args(attributes)
         content = ADD_ATTR_TEMPLATE.format(
             revision=revision,
             down_revision=down_rev or "",
@@ -310,6 +330,9 @@ def create_migration_file(
             region=region,
             attr_name=attr_name,
             attr_type=attr_type,
+            old_attributes=old_attributes,
+            new_attributes=new_attributes,
+            attribute_args=attribute_args,
         )
     else:
         # generic template
