@@ -15,7 +15,7 @@ export interface ParsedContent {
   body_text: string;
   lang?: Lang;
   published_at?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   parsed_s3_key: string;
 }
 
