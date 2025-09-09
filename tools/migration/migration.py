@@ -268,7 +268,7 @@ def downgrade():
     if Old{class_name}.exists():
         Old{class_name}.delete_table()
 
-    print("元のテーブル {table_name} へデータコピー完了。newテーブルは自動削除されました。")
+    print(f"Data copied to the original table {table_name}. The temporary table {table_name}_new has been deleted automatically.")
 """
 
 
