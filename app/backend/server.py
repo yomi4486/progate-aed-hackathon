@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers.rpc import rpc_router
 from ..schema import HealthStatus
+from .routers.rpc import rpc_router
 
 app = FastAPI()
 app.include_router(rpc_router, prefix="/rpc")

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 
-from ...schema import SearchResponse, SearchHit
+from ...schema import SearchHit, SearchResponse
 
 rpc_router = APIRouter()
 
@@ -12,13 +12,18 @@ async def read_root() -> str:
 
 @rpc_router.get("/search")
 async def search_items(query: str) -> SearchResponse:
-    return SearchResponse(total=1, hits=[
-        SearchHit(
-            id="1",
-            title=f"Result for '{query}'",
-            url="https://example.com",
-            site="example.com",
-            lang="en",
-            score=1.0,
-        )
-    ], page=1, size=10)
+    return SearchResponse(
+        total=1,
+        hits=[
+            SearchHit(
+                id="1",
+                title=f"Result for '{query}'",
+                url="https://example.com",
+                site="example.com",
+                lang="en",
+                score=1.0,
+            )
+        ],
+        page=1,
+        size=10,
+    )
