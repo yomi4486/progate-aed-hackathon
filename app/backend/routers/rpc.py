@@ -11,7 +11,7 @@ async def read_root() -> str:
 
 
 @rpc_router.get("/search")
-async def search_items(query: str) -> SearchResponse:
+async def search_items(query: str, page: int = 1, size: int = 10) -> SearchResponse:
     return SearchResponse(
         total=1,
         hits=[
@@ -24,6 +24,6 @@ async def search_items(query: str) -> SearchResponse:
                 score=1.0,
             )
         ],
-        page=1,
-        size=10,
+        page=page,
+        size=size,
     )

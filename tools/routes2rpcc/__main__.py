@@ -5,12 +5,16 @@ import inspect
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from types import ModuleType
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union, get_args, get_origin
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 from starlette.routing import BaseRoute
+
+# Constants for magic numbers
+SIMPLE_HTTP_EXCEPTION_MAX_LINES = 2
 
 
 def type_conv(tp: Any) -> str:
@@ -100,7 +104,7 @@ def analyze_route(route: BaseRoute) -> Optional[Dict[str, Any]]:
                 for line in lines
                 if not line.startswith("@") and not line.startswith("def ") and not line.startswith("async def ")
             ]
-            if len(func_lines) <= 2 and any("raise HTTPException" in line for line in func_lines):
+            if len(func_lines) <= SIMPLE_HTTP_EXCEPTION_MAX_LINES and any("raise HTTPException" in line for line in func_lines):
                 return None
     except Exception:
         pass
@@ -177,11 +181,15 @@ def generate_url_construction(path: str, params: List[Dict[str, Any]], method: s
             else:
                 query_params.append(f"'{param_name}=' + encodeURIComponent({param_name})")
 
+        # Filter out empty strings and join with '&'
+        filtered_params = [f"({param})" for param in query_params]
+        query_string = ".filter(Boolean).join('&')"
+        
         if len(query_params) == 1:
             return f"`${{this.baseUrl}}{path}?${{{query_params[0]}}}`"
         else:
-            query_string = " + '&' + ".join(query_params)
-            return f"`${{this.baseUrl}}{path}?${{{query_string}}}`"
+            params_array = "[" + ", ".join(filtered_params) + "]"
+            return f"`${{this.baseUrl}}{path}?${{{params_array}{query_string}}}`"
 
     else:
         # For POST/PUT/etc, path parameters in URL, body parameters in request body
@@ -265,19 +273,40 @@ def generate_rpc_client(routes_info: List[Optional[Dict[str, Any]]], rpc_prefix:
     return interface_code + "\n\n" + class_code
 
 
+def derive_types_import_path(output_file: str) -> str:
+    """Derive the import path for types based on output file location"""
+    output_path = Path(output_file)
+    output_dir = output_path.parent
+    
+    # Look for types directory relative to output file
+    types_dir = output_dir / "types"
+    if types_dir.exists():
+        return "./types"
+    
+    # Look one level up
+    parent_types_dir = output_dir.parent / "types" 
+    if parent_types_dir.exists():
+        return "../types"
+    
+    # Default fallback
+    return "./types"
+
+
 def process_router_file(file_path: str, output_file: str) -> None:
     """Process a FastAPI router file and generate TypeScript client"""
 
     # Get the project root directory (where pyproject.toml exists)
-    project_root = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    project_root = Path(__file__).parent.parent.parent.resolve()
 
     # Add project root to sys.path for imports
-    if project_root not in sys.path:
-        sys.path.insert(0, project_root)
+    project_root_str = str(project_root)
+    if project_root_str not in sys.path:
+        sys.path.insert(0, project_root_str)
 
     # Get relative path from project root
-    rel_path = os.path.relpath(file_path, project_root)
-    module_path = os.path.splitext(rel_path)[0].replace(os.sep, ".")
+    file_path_obj = Path(file_path).resolve()
+    rel_path = file_path_obj.relative_to(project_root)
+    module_path = str(rel_path.with_suffix("")).replace(os.sep, ".")
     module_name = module_path
 
     try:
@@ -310,8 +339,11 @@ def process_router_file(file_path: str, output_file: str) -> None:
         # Generate TypeScript client code
         client_code = generate_rpc_client(all_routes)
 
+        # Derive import path based on output file location
+        types_import_path = derive_types_import_path(output_file)
+        
         # Add import statement at the top
-        imports = "import type { ErrorResponse } from './types/common';"
+        imports = f"import type {{ ErrorResponse }} from '{types_import_path}/common';"
 
         # Collect all unique return types for imports
         return_types: set[str] = set()
@@ -321,7 +353,7 @@ def process_router_file(file_path: str, output_file: str) -> None:
 
         if return_types:
             type_imports = ", ".join(sorted(return_types))
-            imports += f"\nimport type {{ {type_imports} }} from './types/search';"
+            imports += f"\nimport type {{ {type_imports} }} from '{types_import_path}/search';"
 
         final_code = imports + "\n\n" + client_code
 
@@ -334,7 +366,7 @@ def process_router_file(file_path: str, output_file: str) -> None:
 
     finally:
         try:
-            sys.path.remove(project_root)
+            sys.path.remove(project_root_str)
         except ValueError:
             pass
 
