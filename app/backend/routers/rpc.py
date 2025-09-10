@@ -22,6 +22,14 @@ async def search_items(query: str, page: int = 1, size: int = 10) -> SearchRespo
                 site="example.com",
                 lang="en",
                 score=1.0,
+            ),
+            SearchHit(
+                id="2",
+                title=f"Another result for '{query}'",
+                url="https://example.org",
+                site="example.org",
+                lang="en",
+                score=0.9,
             )
         ],
         page=page,
