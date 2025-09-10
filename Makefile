@@ -1,4 +1,4 @@
-.PHONY: run tf-init tf-apply tf-destroy pydantic2ts # 🚀✨ キラキラターゲット宣言！
+.PHONY: run tf-init tf-apply tf-destroy pydantic2ts routes2rpcc # 🚀✨ キラキラターゲット宣言！
 
 # 🌟 LocalStackを華麗に起動！AWSをローカルで再現しよう！🦄🌈
 run:
@@ -16,3 +16,6 @@ tf-destroy:
 
 pydantic2ts:
 	uv run pydantic2ts ./app/schema ./app/frontend/src/types
+
+routes2rpcc:
+	uv run routes2rpcc ./app/backend/routers/rpc.py ./app/frontend/src/rpc-client.ts

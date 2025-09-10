@@ -48,7 +48,7 @@ def type_conv(tp: Any) -> str:
         return "string"  # ISO 8601 format
 
     if tp is Any or tp is object:
-        return "any"
+        return "unknown"
 
     if origin is Annotated:
         return type_conv(args[0])
@@ -59,7 +59,7 @@ def type_conv(tp: Any) -> str:
     if inspect.isclass(tp) and issubclass_safe(tp, HttpUrl):
         return "string"
 
-    return "any"  # Fallback
+    return "unknown"  # Fallback
 
 
 def model_conv(cls: type[BaseModel]) -> str:
@@ -200,7 +200,7 @@ def process_file(file_path: str, output_dir: str, base_dir: str) -> None:
         if tp is datetime:
             return "string"
         if tp is Any or tp is object:
-            return "any"
+            return "unknown"
         if origin is Annotated:
             return conv(args[0])
 
@@ -213,7 +213,7 @@ def process_file(file_path: str, output_dir: str, base_dir: str) -> None:
         if inspect.isclass(tp) and issubclass_safe(tp, HttpUrl):
             return "string"
 
-        return "any"
+        return "unknown"
 
     for name, obj in module_vars.items():
         if name in defined_literal_aliases and get_origin(obj) is Literal:
