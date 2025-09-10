@@ -1,7 +1,8 @@
+from random import random
+
 from fastapi import APIRouter, HTTPException
 
 from ...schema import SearchHit, SearchResponse
-from random import random
 
 rpc_router = APIRouter()
 
