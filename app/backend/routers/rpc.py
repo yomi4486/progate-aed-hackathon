@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from ...schema import SearchHit, SearchResponse
+from random import random
 
 rpc_router = APIRouter()
 
@@ -11,27 +12,26 @@ async def read_root() -> str:
 
 
 @rpc_router.get("/search")
-async def search_items(query: str, page: int = 1, size: int = 10) -> SearchResponse:
+async def search_items(query: str, page: int = 1, size: int = 30) -> SearchResponse:
+    all_hits = [
+        SearchHit(
+            id=str(i),
+            title=f"Random result {i} for '{query}'",
+            url=f"https://example{i}.com/{hash(query)}",
+            site=f"example{i}.com",
+            lang="en",
+            score=round(random(), 2),
+        )
+        for i in range(1, 101)
+    ]
+
+    start = (page - 1) * size
+    end = start + size
+    paginated_hits = all_hits[start:end]
+
     return SearchResponse(
-        total=1,
-        hits=[
-            SearchHit(
-                id="1",
-                title=f"Result for '{query}'",
-                url="https://example.com",
-                site="example.com",
-                lang="en",
-                score=1.0,
-            ),
-            SearchHit(
-                id="2",
-                title=f"Another result for '{query}'",
-                url="https://example.org",
-                site="example.org",
-                lang="en",
-                score=0.9,
-            )
-        ],
+        total=len(all_hits),
+        hits=paginated_hits,
         page=page,
         size=size,
     )
