@@ -122,7 +122,6 @@ function App() {
               />
               <button className="search-btn" type="submit" disabled={loading || !inputValue}>
                 <FaSearch style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                検索
               </button>
             </form>
           </div>
