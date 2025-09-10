@@ -10,7 +10,7 @@
   box-sizing: border-box;
 }
 /* タイトルと検索フォームを横並び */
-.search-bar-row{
+.search-bar-row {
   color: var(--color-meta);
   display: flex;
   align-items: center;
