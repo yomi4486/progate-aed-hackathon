@@ -1,11 +1,12 @@
-name: pydantic2ts
+name: call tools
 
 on:
   push:
     # 全ブランチ対象
     paths:
-      - 'app/src/schema/**'
-      - 'tools/pydantic2ts/**'
+      - 'app/schema/**'
+      - 'app/backend/**'
+      - 'tools/**'
 
 permissions:
   contents: write
@@ -47,6 +48,12 @@ jobs:
         run: |
           source .venv/bin/activate
           make pydantic2ts
+
+      - name: Generate RPC client from FastAPI routes
+        shell: bash
+        run: |
+          source .venv/bin/activate
+          make routes2rpcc
 
       - name: Apply changes
         shell: bash
