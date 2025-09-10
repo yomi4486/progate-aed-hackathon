@@ -27,10 +27,6 @@ export interface SearchResponse {
   size: number;
 }
 
-export interface SuggestQuery {
-  q: string;
-}
-
 export interface SuggestResponse {
   suggestions: Array<string>;
 }
