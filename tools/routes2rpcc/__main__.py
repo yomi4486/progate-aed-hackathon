@@ -104,7 +104,9 @@ def analyze_route(route: BaseRoute) -> Optional[Dict[str, Any]]:
                 for line in lines
                 if not line.startswith("@") and not line.startswith("def ") and not line.startswith("async def ")
             ]
-            if len(func_lines) <= SIMPLE_HTTP_EXCEPTION_MAX_LINES and any("raise HTTPException" in line for line in func_lines):
+            if len(func_lines) <= SIMPLE_HTTP_EXCEPTION_MAX_LINES and any(
+                "raise HTTPException" in line for line in func_lines
+            ):
                 return None
     except Exception:
         pass
@@ -184,7 +186,7 @@ def generate_url_construction(path: str, params: List[Dict[str, Any]], method: s
         # Filter out empty strings and join with '&'
         filtered_params = [f"({param})" for param in query_params]
         query_string = ".filter(Boolean).join('&')"
-        
+
         if len(query_params) == 1:
             return f"`${{this.baseUrl}}{path}?${{{query_params[0]}}}`"
         else:
@@ -277,17 +279,17 @@ def derive_types_import_path(output_file: str) -> str:
     """Derive the import path for types based on output file location"""
     output_path = Path(output_file)
     output_dir = output_path.parent
-    
+
     # Look for types directory relative to output file
     types_dir = output_dir / "types"
     if types_dir.exists():
         return "./types"
-    
+
     # Look one level up
-    parent_types_dir = output_dir.parent / "types" 
+    parent_types_dir = output_dir.parent / "types"
     if parent_types_dir.exists():
         return "../types"
-    
+
     # Default fallback
     return "./types"
 
@@ -341,7 +343,7 @@ def process_router_file(file_path: str, output_file: str) -> None:
 
         # Derive import path based on output file location
         types_import_path = derive_types_import_path(output_file)
-        
+
         # Add import statement at the top
         imports = f"import type {{ ErrorResponse }} from '{types_import_path}/common';"
 
