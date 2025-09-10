@@ -6,7 +6,9 @@ import './App.css';
 import { RPCClientImpl } from './rpc-client';
 import type { SearchHit } from './types/search';
 
-const rpc = new RPCClientImpl('https://exercise-elect-tell-novelty.trycloudflare.com');
+const baseURL = import.meta.env.VITE_API_BASE_URL!;
+
+const rpc = new RPCClientImpl(baseURL);
 
   function App() {
     // クエリパラメータから初期値を取得
