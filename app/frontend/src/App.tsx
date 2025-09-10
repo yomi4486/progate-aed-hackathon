@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import './App.css';
 import { RPCClientImpl } from './rpc-client';
 import type { SearchHit } from './types/search';
@@ -24,10 +25,10 @@ function App() {
   const [results, setResults] = useState<SearchHit[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searched, setSearched] = useState(false);
+  const [searched, setSearched] = useState(() => !!getParam('q', ''));
   const [page, setPage] = useState(() => getParamInt('page', 1));
   const [total, setTotal] = useState(0);
-  const [size] = useState(10);
+  const [size] = useState(30);
   const [query, setQuery] = useState(() => getParam('q', ''));
 
   // クエリパラメータを更新
@@ -98,33 +99,67 @@ function App() {
 
   return (
     <div className="search-root">
-      <div className={`topmenu ${searched ? "has-query" : "webhp"}`}>
-        <header
-          className={`search-header ${searched ? "has-query" : ""}`}
-          onClick={() => {
-            location.href = "/"
-          }}
-        >
-          <h1 className={`search-title ${searched ? "has-query" : ""}`}>
-            Progate Search
-          </h1>
-        </header>
-        <form className="search-form" onSubmit={handleSearch} autoComplete="off">
-          <input
-            className="search-input"
-            type="text"
-            placeholder="検索ワードを入力..."
-            ref={inputRef}
-            defaultValue={query}
-            value={inputValue}
-            onInput={e => setInputValue((e.target as HTMLInputElement).value)}
-          />
-          <button className="search-btn" type="submit" disabled={loading || !inputValue}>
-            検索
-          </button>
-        </form>
+      <div className={`topmenu ${(searched || loading) ? "has-query" : "webhp"}`}> 
+        {!(searched || loading) ? (
+          <div className="search-center">
+            <header
+              className="search-header"
+              onClick={() => { location.href = "/"; }}
+            >
+              <h1 className="search-title">
+                Progate Search
+              </h1>
+            </header>
+            <form className="search-form" onSubmit={handleSearch} autoComplete="off">
+              <input
+                className="search-input"
+                type="text"
+                placeholder="検索ワードを入力..."
+                ref={inputRef}
+                defaultValue={query}
+                value={inputValue}
+                onInput={e => setInputValue((e.target as HTMLInputElement).value)}
+              />
+              <button className="search-btn" type="submit" disabled={loading || !inputValue}>
+                <FaSearch style={{ marginRight: 6, verticalAlign: 'middle' }} />
+                検索
+              </button>
+            </form>
+          </div>
+        ) : (
+          <div className="search-bar-row">
+            <header
+              className={`search-header ${searched ? "has-query" : ""}`}
+              onClick={() => { location.href = "/"; }}
+            >
+              <h1 className={`search-title ${searched ? "has-query" : ""}`}>
+                Progate Search
+              </h1>
+            </header>
+            <form className="search-form" onSubmit={handleSearch} autoComplete="off">
+              <input
+                className="search-input"
+                type="text"
+                placeholder="検索ワードを入力..."
+                ref={inputRef}
+                defaultValue={query}
+                value={inputValue}
+                onInput={e => setInputValue((e.target as HTMLInputElement).value)}
+              />
+              <button className="search-btn" type="submit" disabled={loading || !inputValue}>
+                <FaSearch style={{ marginRight: 6, verticalAlign: 'middle' }} />
+              </button>
+            </form>
+          </div>
+        )}
       </div>
       <main className="search-results">
+        <div style={{height:'30px'}}></div>
+        {searched && results.length > 0 && (
+          <div className="search-results-count">
+            {total} 件の結果が見つかりました
+          </div>
+        )}
         {loading && <div className="search-loading">検索中...</div>}
         {error && <div className="search-error">{error}</div>}
         {!loading && !error && searched && results.length === 0 && (
@@ -154,7 +189,7 @@ function App() {
               onClick={() => handlePageChange(page - 1)}
               disabled={page === 1 || loading}
             >
-              前へ
+              <FaChevronLeft style={{ verticalAlign: 'middle' }} />
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(p =>
               Math.abs(p - page) <= 2 || p === 1 || p === totalPages ? (
@@ -176,7 +211,7 @@ function App() {
               onClick={() => handlePageChange(page + 1)}
               disabled={page === totalPages || loading}
             >
-              次へ
+              <FaChevronRight style={{ verticalAlign: 'middle' }} />
             </button>
           </div>
         )}
