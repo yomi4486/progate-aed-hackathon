@@ -1,7 +1,4 @@
-
-
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { RPCClientImpl } from './rpc-client';
 import type { SearchHit } from './types/search';
@@ -10,107 +7,123 @@ const baseURL = import.meta.env.VITE_API_BASE_URL!;
 
 const rpc = new RPCClientImpl(baseURL);
 
-  function App() {
-    // クエリパラメータから初期値を取得
-    function getParam(name: string, def: string = ''): string {
-      const params = new URLSearchParams(window.location.search);
-      return params.get(name) ?? def;
-    }
-    function getParamInt(name: string, def: number): number {
-      const v = getParam(name);
-      const n = parseInt(v, 10);
-      return isNaN(n) ? def : n;
-    }
+function App() {
+  // クエリパラメータから初期値を取得
+  function getParam(name: string, def: string = ''): string {
+    const params = new URLSearchParams(window.location.search);
+    return params.get(name) ?? def;
+  }
+  function getParamInt(name: string, def: number): number {
+    const v = getParam(name);
+    const n = parseInt(v, 10);
+    return isNaN(n) ? def : n;
+  }
 
-    const [query, setQuery] = useState(() => getParam('q', ''));
-    const [results, setResults] = useState<SearchHit[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [searched, setSearched] = useState(false);
-    const [page, setPage] = useState(() => getParamInt('page', 1));
-    const [total, setTotal] = useState(0);
-    const [size] = useState(10);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState(() => getParam('q', ''));
+  const [results, setResults] = useState<SearchHit[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
+  const [page, setPage] = useState(() => getParamInt('page', 1));
+  const [total, setTotal] = useState(0);
+  const [size] = useState(10);
+  const [query, setQuery] = useState(() => getParam('q', ''));
 
-    // クエリパラメータを更新
-    function updateQueryParams(q: string, p: number) {
-      const params = new URLSearchParams(window.location.search);
-      if (q) {
-        params.set('q', q);
-      } else {
-        params.delete('q');
-      }
-      if (p > 1) {
-        params.set('page', String(p));
-      } else {
-        params.delete('page');
-      }
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      window.history.replaceState(null, '', newUrl);
+  // クエリパラメータを更新
+  function updateQueryParams(q: string, p: number) {
+    const params = new URLSearchParams(window.location.search);
+    if (q) {
+      params.set('q', q);
+    } else {
+      params.delete('q');
     }
+    if (p > 1) {
+      params.set('page', String(p));
+    } else {
+      params.delete('page');
+    }
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState(null, '', newUrl);
+  }
 
-    const fetchSearch = async (q: string, p: number, s: number) => {
-      updateQueryParams(q, p);
-      setLoading(true);
-      setError(null);
-      setSearched(true);
-      try {
-        const res = await rpc.search(q, p, s);
-        if ('error' in res) {
-          setError(res.error);
-          setResults([]);
-          setTotal(0);
-        } else {
-          setResults(res.hits);
-          setTotal(res.total);
-        }
-      } catch (err) {
-        setError('検索中にエラーが発生しました');
+  const fetchSearch = async (q: string, p: number, s: number) => {
+    updateQueryParams(q, p);
+    setLoading(true);
+    setError(null);
+    setSearched(true);
+    try {
+      const res = await rpc.search(q, p, s);
+      if ('error' in res) {
+        setError(res.error);
         setResults([]);
         setTotal(0);
-      } finally {
-        setLoading(false);
+      } else {
+        setResults(res.hits);
+        setTotal(res.total);
       }
-    };
+    } catch (err) {
+      setError('検索中にエラーが発生しました');
+      setResults([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleSearch = (e: React.FormEvent) => {
-      e.preventDefault();
-      setPage(1);
-      fetchSearch(query, 1, size);
-    };
+  // 検索時のみinputの値を取得
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = inputRef.current?.value ?? '';
+    setQuery(q);
+    setPage(1);
+    fetchSearch(q, 1, size);
+  };
 
-    const handlePageChange = (newPage: number) => {
-      setPage(newPage);
-      fetchSearch(query, newPage, size);
-    };
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    fetchSearch(query, newPage, size);
+  };
 
-    // 初回マウント時にクエリパラメータがあれば自動検索
-    useEffect(() => {
-      if (query) {
-        fetchSearch(query, page, size);
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+  // 初回マウント時にクエリパラメータがあれば自動検索
+  useEffect(() => {
+    if (query) {
+      fetchSearch(query, page, size);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ページ数計算
   const totalPages = Math.max(1, Math.ceil(total / size));
 
   return (
     <div className="search-root">
-      <header className="search-header">
-        <h1 className="search-title">Progate Search</h1>
-      </header>
-      <form className="search-form" onSubmit={handleSearch} autoComplete="off">
-        <input
-          className="search-input"
-          type="text"
-          placeholder="検索ワードを入力..."
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-        />
-        <button className="search-btn" type="submit" disabled={loading || !query}>
-          検索
-        </button>
-      </form>
+      <div className={`topmenu ${searched ? "has-query" : "webhp"}`}>
+        <header
+          className={`search-header ${searched ? "has-query" : ""}`}
+          onClick={() => {
+            location.href = "/"
+          }}
+        >
+          <h1 className={`search-title ${searched ? "has-query" : ""}`}>
+            Progate Search
+          </h1>
+        </header>
+        <form className="search-form" onSubmit={handleSearch} autoComplete="off">
+          <input
+            className="search-input"
+            type="text"
+            placeholder="検索ワードを入力..."
+            ref={inputRef}
+            defaultValue={query}
+            value={inputValue}
+            onInput={e => setInputValue((e.target as HTMLInputElement).value)}
+          />
+          <button className="search-btn" type="submit" disabled={loading || !inputValue}>
+            検索
+          </button>
+        </form>
+      </div>
       <main className="search-results">
         {loading && <div className="search-loading">検索中...</div>}
         {error && <div className="search-error">{error}</div>}
@@ -122,7 +135,9 @@ const rpc = new RPCClientImpl(baseURL);
             <a className="search-hit-title" href={hit.url} target="_blank" rel="noopener noreferrer">
               {hit.title || hit.url}
             </a>
-            <div className="search-hit-url">{hit.url}</div>
+            <div className="search-hit-url">
+              <a className="search-hit-url" href={hit.url}>{hit.url}</a>
+            </div>
             {hit.snippet && <div className="search-hit-snippet" dangerouslySetInnerHTML={{ __html: hit.snippet }} />}
             <div className="search-hit-meta">
               <span className="search-hit-site">{hit.site}</span>
