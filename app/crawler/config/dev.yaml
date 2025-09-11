@@ -1,0 +1,55 @@
+# Development environment configuration
+environment: "dev"
+
+# AWS Configuration (will be provided via environment variables or AWS credentials)
+aws_region: "ap-northeast-1"
+
+# AWS Resources (development/LocalStack)
+dynamodb_table: "crawler-dev-url-states"
+sqs_crawl_queue_url: "https://sqs.ap-northeast-1.amazonaws.com/123456789012/crawler-dev-crawl-queue"
+sqs_discovery_queue_url: "https://sqs.ap-northeast-1.amazonaws.com/123456789012/crawler-dev-discovery-queue"
+s3_raw_bucket: "crawler-dev-raw-content"
+redis_url: "redis://localhost:6379/0"
+
+# Crawler Configuration
+max_concurrent_requests: 5
+request_timeout: 30
+user_agent: "AEDHack-Crawler-Dev/1.0"
+
+# Rate Limiting (relaxed for development)
+default_qps_per_domain: 2
+domain_qps_overrides:
+  "example.com": 5
+  "httpbin.org": 10  # For testing
+
+# Retry Configuration  
+max_retries: 2
+base_backoff_seconds: 30
+max_backoff_seconds: 300
+
+# Locking Configuration (shorter for development)
+acquisition_ttl_seconds: 1800  # 30 minutes
+heartbeat_interval_seconds: 15  # 15 seconds
+
+# Content Processing
+max_content_length: 10485760  # 10MB (smaller for dev)
+default_language: "ja"
+language_detection_confidence: 0.6
+
+# Logging
+log_level: "DEBUG"
+json_logs: false  # Human-readable logs for development
+
+# Health Check
+health_check_port: 8080
+health_check_enabled: true
+
+# Monitoring
+metrics_enabled: true
+metrics_interval_seconds: 30
+
+# Development-specific overrides
+domain_qps_overrides:
+  "localhost": 100
+  "127.0.0.1": 100
+  "httpbin.org": 50

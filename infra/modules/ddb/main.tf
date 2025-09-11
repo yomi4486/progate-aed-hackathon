@@ -32,3 +32,4 @@ resource "aws_dynamodb_table" "url_states" {
 }
 
 output "table_name" { value = aws_dynamodb_table.url_states.name }
+output "table_arn" { value = aws_dynamodb_table.url_states.arn }

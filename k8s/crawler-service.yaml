@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: crawler-worker-service
+  namespace: default
+  labels:
+    app: crawler-worker
+spec:
+  selector:
+    app: crawler-worker
+  ports:
+  - name: health
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
+---
+# ServiceMonitor for Prometheus scraping (if using Prometheus Operator)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: crawler-worker-metrics
+  namespace: default
+  labels:
+    app: crawler-worker
+spec:
+  selector:
+    matchLabels:
+      app: crawler-worker
+  endpoints:
+  - port: health
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s

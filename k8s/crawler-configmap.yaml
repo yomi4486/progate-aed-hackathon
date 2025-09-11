@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: crawler-config
+  namespace: default
+data:
+  # Environment
+  CRAWLER_ENV: "prod"
+  LOG_LEVEL: "INFO"
+  
+  # AWS Configuration
+  AWS_REGION: "ap-northeast-1"
+  
+  # Crawler Settings
+  MAX_CONCURRENT_REQUESTS: "10"
+  REQUEST_TIMEOUT: "60"
+  USER_AGENT: "AEDHack-Crawler-EKS/1.0"
+  
+  # Rate Limiting
+  DEFAULT_QPS_PER_DOMAIN: "1"
+  
+  # Retry Configuration
+  MAX_RETRIES: "3"
+  BASE_BACKOFF_SECONDS: "120"
+  MAX_BACKOFF_SECONDS: "3600"
+  
+  # Locking Configuration
+  ACQUISITION_TTL_SECONDS: "3600"
+  HEARTBEAT_INTERVAL_SECONDS: "30"
+  
+  # Content Processing
+  MAX_CONTENT_LENGTH: "104857600"  # 100MB
+  DEFAULT_LANGUAGE: "ja"
+  LANGUAGE_DETECTION_CONFIDENCE: "0.8"
+  
+  # Health Check
+  HEALTH_CHECK_PORT: "8080"
+  HEALTH_CHECK_ENABLED: "true"
+  
+  # Monitoring
+  METRICS_ENABLED: "true"
+  METRICS_INTERVAL_SECONDS: "120"

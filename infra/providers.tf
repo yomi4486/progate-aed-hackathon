@@ -1,20 +1,4 @@
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
-  default     = "ap-northeast-1"
-}
-
-variable "use_localstack" {
-  description = "Whether to use LocalStack endpoints"
-  type        = bool
-  default     = true
-}
-
-variable "localstack_endpoint" {
-  description = "LocalStack endpoint URL"
-  type        = string
-  default     = "http://localhost:4566"
-}
+# Variables moved to main.tf to avoid duplication
 
 provider "aws" {
   region                      = var.aws_region
