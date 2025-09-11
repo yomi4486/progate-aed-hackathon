@@ -1,14 +1,10 @@
-from fastapi import APIRouter, HTTPException
-
-from ...schema import SearchHit, SearchResponse
 from random import random
 
+from fastapi import APIRouter
+
+from ...schema import SearchHit, SearchResponse
+
 rpc_router = APIRouter()
-
-
-@rpc_router.get("/")
-async def read_root() -> str:
-    raise HTTPException(status_code=404, detail="Not Found")
 
 
 @rpc_router.get("/search")

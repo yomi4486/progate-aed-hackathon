@@ -1,0 +1,153 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crawler-worker
+  namespace: default
+  labels:
+    app: crawler-worker
+    component: crawler
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: crawler-worker
+  template:
+    metadata:
+      labels:
+        app: crawler-worker
+        component: crawler
+        version: v1
+      annotations:
+        # Force pod restart on config/secret changes
+        config/hash: ""  # Set during deployment
+    spec:
+      # Service account for AWS IAM permissions (IRSA)
+      serviceAccountName: crawler-service-account
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      
+      containers:
+      - name: crawler
+        image: your-ecr-repo/crawler:latest
+        imagePullPolicy: Always
+        
+        # Container security context
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        
+        # Commands and args
+        command: ["python", "-m", "app.crawler.worker"]
+        args: ["run", "--environment", "prod", "--log-level", "INFO"]
+        
+        # Environment variables
+        env:
+        - name: CRAWLER_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        
+        # Environment from ConfigMap
+        envFrom:
+        - configMapRef:
+            name: crawler-config
+        - secretRef:
+            name: crawler-secrets
+        
+        # Resources
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+            ephemeral-storage: "1Gi"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+            ephemeral-storage: "2Gi"
+        
+        # Health probes
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -m
+            - app.crawler.worker
+            - health
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        readinessProbe:
+          exec:
+            command:
+            - python
+            - -m
+            - app.crawler.worker
+            - health
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 2
+        
+        # Startup probe for slow initialization
+        startupProbe:
+          exec:
+            command:
+            - python
+            - -m
+            - app.crawler.worker
+            - health
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 12  # 60 seconds total
+        
+        # Volume mounts for writable directories
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: var-tmp
+          mountPath: /var/tmp
+      
+      # Termination grace period for graceful shutdown
+      terminationGracePeriodSeconds: 60
+      
+      # Volumes
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: var-tmp
+        emptyDir: {}
+      
+      # Node selection and affinity
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: crawler-worker
+              topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: crawler-service-account
+  namespace: default
+  annotations:
+    # EKS IAM role association - will be updated by deployment script
+    eks.amazonaws.com/role-arn: "PLACEHOLDER_CRAWLER_SERVICE_ACCOUNT_ROLE_ARN"

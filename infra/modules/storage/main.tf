@@ -34,3 +34,7 @@ resource "aws_s3_bucket_versioning" "this" {
 output "raw_bucket" { value = aws_s3_bucket.raw.bucket }
 output "parsed_bucket" { value = aws_s3_bucket.parsed.bucket }
 output "index_ready_bucket" { value = aws_s3_bucket.index_ready.bucket }
+
+output "raw_bucket_arn" { value = aws_s3_bucket.raw.arn }
+output "parsed_bucket_arn" { value = aws_s3_bucket.parsed.arn }
+output "index_ready_bucket_arn" { value = aws_s3_bucket.index_ready.arn }

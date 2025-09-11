@@ -1,0 +1,7 @@
+environment: dev
+dynamodb_table: test-crawler-urls
+sqs_crawl_queue_url: http://localhost:4566/000000000000/test-crawl-queue
+s3_raw_bucket: test-raw-bucket
+redis_url: redis://localhost:6379
+acquisition_ttl_seconds: 300
+heartbeat_interval_seconds: 10
