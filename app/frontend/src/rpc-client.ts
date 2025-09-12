@@ -1,8 +1,10 @@
 import type { ErrorResponse } from './types/common';
 import type { SearchResponse } from './types/search';
+import type { CharWidthResponse } from './types/charwidth';
 
 export interface RPCClient {
   search(query: string, page?: number, size?: number): Promise<SearchResponse | ErrorResponse>;
+  analyzeChahan(query: string): Promise<CharWidthResponse | ErrorResponse>;
 }
 
 export class RPCClientImpl implements RPCClient {
@@ -18,5 +20,13 @@ export class RPCClientImpl implements RPCClient {
       return response.json() as Promise<ErrorResponse>;
     }
     return response.json() as Promise<SearchResponse>;
+  }
+
+  async analyzeChahan(query: string): Promise<CharWidthResponse | ErrorResponse> {
+    const response = await fetch(`${this.baseUrl}/rpc/analyze-chahan?query=${encodeURIComponent(query)}`);
+    if (!response.ok) {
+      return response.json() as Promise<ErrorResponse>;
+    }
+    return response.json() as Promise<CharWidthResponse>;
   }
 }
