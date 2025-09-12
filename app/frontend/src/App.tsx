@@ -3,6 +3,7 @@ import { FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import './App.css';
 import { RPCClientImpl } from './rpc-client';
 import type { SearchHit } from './types/search';
+import type { CharWidthResponse } from './types/charwidth';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL!;
 
@@ -30,6 +31,7 @@ function App() {
   const [total, setTotal] = useState(0);
   const [size] = useState(30);
   const [query, setQuery] = useState(() => getParam('q', ''));
+  const [chahanAnalysis, setChahanAnalysis] = useState<CharWidthResponse | null>(null);
 
   // クエリパラメータを更新
   function updateQueryParams(q: string, p: number) {
@@ -53,6 +55,7 @@ function App() {
     setLoading(true);
     setError(null);
     setSearched(true);
+    setChahanAnalysis(null); // Clear previous analysis
     try {
       const res = await rpc.search(q, p, s);
       if ('error' in res) {
@@ -62,6 +65,17 @@ function App() {
       } else {
         setResults(res.hits);
         setTotal(res.total);
+      }
+      
+      // Also analyze character widths for any query
+      try {
+        const chahanRes = await rpc.analyzeChahan(q);
+        if (!('error' in chahanRes)) {
+          setChahanAnalysis(chahanRes);
+        }
+      } catch (chahanErr) {
+        // Silently fail - character analysis is optional
+        console.log('Character analysis failed:', chahanErr);
       }
     } catch (err) {
       setError('検索中にエラーが発生しました');
@@ -154,6 +168,60 @@ function App() {
       </div>
       <main className="search-results">
         <div style={{height:'30px'}}></div>
+        
+        {/* Character Width Analysis */}
+        {chahanAnalysis && (
+          <div className="chahan-analysis" style={{ 
+            marginBottom: '20px', 
+            padding: '15px', 
+            border: '2px solid #1a73e8', 
+            borderRadius: '8px', 
+            backgroundColor: '#f8f9fa' 
+          }}>
+            <h3 style={{ color: '#1a73e8', marginBottom: '10px' }}>
+              🍚 文字幅分析結果 (Character Width Analysis)
+            </h3>
+            <div style={{ marginBottom: '10px', fontSize: '16px', fontWeight: 'bold' }}>
+              {chahanAnalysis.message}
+            </div>
+            
+            {chahanAnalysis.is_chahan_related && (
+              <div style={{ marginBottom: '10px' }}>
+                <div style={{ marginBottom: '5px' }}>
+                  <strong>元のクエリ:</strong> {chahanAnalysis.original_query}
+                </div>
+                <div style={{ marginBottom: '5px' }}>
+                  <strong>全角変換:</strong> {chahanAnalysis.converted_fullwidth}
+                </div>
+                <div style={{ marginBottom: '5px' }}>
+                  <strong>半角変換:</strong> {chahanAnalysis.converted_halfwidth}
+                </div>
+              </div>
+            )}
+            
+            <details style={{ marginTop: '10px' }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+                詳細分析 (Detailed Analysis)
+              </summary>
+              <div style={{ marginTop: '10px', fontSize: '14px' }}>
+                <div>総文字数: {chahanAnalysis.analysis.total_chars}</div>
+                <div>全角文字数: {chahanAnalysis.analysis.fullwidth_count}</div>
+                <div>半角文字数: {chahanAnalysis.analysis.halfwidth_count}</div>
+                <div>その他文字数: {chahanAnalysis.analysis.other_count}</div>
+                <div>全角のみ: {chahanAnalysis.analysis.is_all_fullwidth ? 'はい' : 'いいえ'}</div>
+                <div>半角のみ: {chahanAnalysis.analysis.is_all_halfwidth ? 'はい' : 'いいえ'}</div>
+                <div>混合幅: {chahanAnalysis.analysis.has_mixed_widths ? 'はい' : 'いいえ'}</div>
+                {chahanAnalysis.analysis.fullwidth_chars.length > 0 && (
+                  <div>全角文字: {chahanAnalysis.analysis.fullwidth_chars.join(', ')}</div>
+                )}
+                {chahanAnalysis.analysis.halfwidth_chars.length > 0 && (
+                  <div>半角文字: {chahanAnalysis.analysis.halfwidth_chars.join(', ')}</div>
+                )}
+              </div>
+            </details>
+          </div>
+        )}
+        
         {searched && results.length > 0 && (
           <div className="search-results-count">
             {total} 件の結果が見つかりました
