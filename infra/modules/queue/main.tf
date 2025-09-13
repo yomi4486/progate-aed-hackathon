@@ -23,6 +23,21 @@ resource "aws_sqs_queue" "index_queue" {
   })
 }
 
+resource "aws_sqs_queue" "discovery_queue" {
+  name                       = "${var.name_prefix}-discovery"
+  visibility_timeout_seconds = 60
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.dlq.arn
+    maxReceiveCount     = 5
+  })
+}
+
 output "url_queue_url" { value = aws_sqs_queue.url_queue.id }
 output "index_queue_url" { value = aws_sqs_queue.index_queue.id }
+output "discovery_queue_url" { value = aws_sqs_queue.discovery_queue.id }
 output "dlq_url" { value = aws_sqs_queue.dlq.id }
+
+output "url_queue_arn" { value = aws_sqs_queue.url_queue.arn }
+output "index_queue_arn" { value = aws_sqs_queue.index_queue.arn }
+output "discovery_queue_arn" { value = aws_sqs_queue.discovery_queue.arn }
+output "dlq_arn" { value = aws_sqs_queue.dlq.arn }

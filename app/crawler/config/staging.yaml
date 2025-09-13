@@ -1,0 +1,51 @@
+# Staging environment configuration
+environment: "staging"
+
+# AWS Configuration (credentials from environment/IAM role)
+aws_region: "ap-northeast-1"
+
+# AWS Resources (staging)
+dynamodb_table: "aedhack-staging-url-states"
+# SQS URLs and S3 bucket will be provided via environment variables
+# sqs_crawl_queue_url: "https://sqs.ap-northeast-1.amazonaws.com/123456789012/aedhack-staging-crawl-queue"
+# s3_raw_bucket: "aedhack-staging-raw"
+
+# Redis (ElastiCache)
+# redis_url will be provided via environment variables
+
+# Crawler Configuration (moderate settings)
+max_concurrent_requests: 10
+request_timeout: 45
+user_agent: "AEDHack-Crawler-Staging/1.0"
+
+# Rate Limiting (respectful)
+default_qps_per_domain: 1
+domain_qps_overrides:
+  # Add specific domain overrides as needed
+  "fast-site.com": 5
+
+# Retry Configuration
+max_retries: 3
+base_backoff_seconds: 60
+max_backoff_seconds: 1800
+
+# Locking Configuration
+acquisition_ttl_seconds: 3600    # 1 hour
+heartbeat_interval_seconds: 30   # 30 seconds
+
+# Content Processing
+max_content_length: 52428800  # 50MB
+default_language: "ja"
+language_detection_confidence: 0.7
+
+# Logging (structured for staging)
+log_level: "INFO"
+json_logs: true
+
+# Health Check
+health_check_port: 8080
+health_check_enabled: true
+
+# Monitoring
+metrics_enabled: true
+metrics_interval_seconds: 60

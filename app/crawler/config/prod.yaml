@@ -1,0 +1,52 @@
+# Production environment configuration
+environment: "prod"
+
+# AWS Configuration (credentials from IAM role)
+aws_region: "ap-northeast-1"
+
+# AWS Resources (production) - set via environment variables
+dynamodb_table: "${DYNAMODB_TABLE:aedhack-prod-url-states}"
+sqs_crawl_queue_url: "${SQS_CRAWL_QUEUE_URL}"
+sqs_discovery_queue_url: "${SQS_DISCOVERY_QUEUE_URL}"
+s3_raw_bucket: "${S3_RAW_BUCKET}"
+
+# Redis (ElastiCache cluster) - set via environment variables
+redis_url: "${REDIS_URL}"
+
+# Crawler Configuration (production-optimized)
+max_concurrent_requests: 15
+request_timeout: 60
+user_agent: "AEDHack-Crawler/1.0"
+
+# Rate Limiting (conservative and respectful)
+default_qps_per_domain: 1
+domain_qps_overrides:
+  # Production domain-specific settings
+  # "high-volume-site.com": 3
+  # "api-friendly-site.com": 5
+
+# Retry Configuration (robust)
+max_retries: 3
+base_backoff_seconds: 120
+max_backoff_seconds: 3600
+
+# Locking Configuration (production timeouts)
+acquisition_ttl_seconds: 3600    # 1 hour
+heartbeat_interval_seconds: 30   # 30 seconds
+
+# Content Processing (full capacity)
+max_content_length: 104857600  # 100MB
+default_language: "ja"
+language_detection_confidence: 0.8
+
+# Logging (optimized for production monitoring)
+log_level: "INFO"
+json_logs: true
+
+# Health Check
+health_check_port: 8080
+health_check_enabled: true
+
+# Monitoring (standard intervals)
+metrics_enabled: true
+metrics_interval_seconds: 120

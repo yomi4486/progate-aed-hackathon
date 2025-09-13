@@ -1,0 +1,61 @@
+# Local development environment configuration (with LocalStack)
+environment: "devlocal"
+
+# LocalStack Configuration
+localstack_endpoint: "http://localhost:4566"
+aws_region: "ap-northeast-1"  # Match docker-compose.yml
+aws_access_key_id: "test"
+aws_secret_access_key: "test"
+
+# AWS Resources (LocalStack)
+dynamodb_table: "aedhack-devlocal-url-states"
+sqs_crawl_queue_url: "http://sqs.ap-northeast-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-crawl-queue"
+sqs_discovery_queue_url: "http://sqs.ap-northeast-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-discovery-queue"
+sqs_indexing_queue_url: "http://sqs.ap-northeast-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-indexing-queue"
+sqs_processing_queue_url: "http://sqs.ap-northeast-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-processing-queue"
+sqs_dlq_url: "http://sqs.ap-northeast-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-dlq"
+s3_raw_bucket: "aedhack-devlocal-raw"
+
+# Redis (disabled for LocalStack testing)
+redis_url: null
+redis_db: 0
+rate_limiter_enabled: false  # Disable Redis-based rate limiting
+
+# Crawler Configuration (very relaxed for local testing)
+max_concurrent_requests: 3
+request_timeout: 10
+user_agent: "AEDHack-Crawler-DevLocal/1.0"
+
+# Rate Limiting (very permissive for testing)
+default_qps_per_domain: 10
+domain_qps_overrides:
+  "httpbin.org": 50
+  "example.com": 20
+  "localhost": 100
+  "127.0.0.1": 100
+
+# Retry Configuration (fast retries for testing)
+max_retries: 1
+base_backoff_seconds: 5
+max_backoff_seconds: 60
+
+# Locking Configuration (short locks for testing)
+acquisition_ttl_seconds: 300   # 5 minutes
+heartbeat_interval_seconds: 10  # 10 seconds
+
+# Content Processing
+max_content_length: 1048576  # 1MB (small for local testing)
+default_language: "en"  # Default to English for test content
+language_detection_confidence: 0.5
+
+# Logging (verbose for local development)
+log_level: "DEBUG"
+json_logs: false
+
+# Health Check
+health_check_port: 8080
+health_check_enabled: true
+
+# Monitoring (frequent updates for testing)
+metrics_enabled: true
+metrics_interval_seconds: 10

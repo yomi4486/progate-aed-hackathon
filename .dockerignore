@@ -1,0 +1,66 @@
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.venv
+.mypy_cache
+.pytest_cache
+.ruff_cache
+
+# Development tools
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Documentation
+docs/
+# Keep README.md for package building
+# *.md
+
+# Frontend files
+app/frontend/
+node_modules/
+
+# Local development
+.env
+.env.*
+docker-compose.yml
+docker-compose.yaml
+
+# Test files
+tests/
+*_test.py
+test_*.py
+
+# Kubernetes manifests
+k8s/
+
+# Local data and logs
+*.log
+logs/
+data/
+
+# Temporary files
+tmp/
+temp/
+.DS_Store
+Thumbs.db

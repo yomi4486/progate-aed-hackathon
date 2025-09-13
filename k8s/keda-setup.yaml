@@ -1,0 +1,187 @@
+# KEDA (Kubernetes Event-driven Autoscaling) setup for SQS-based scaling
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: keda
+  labels:
+    app: keda
+
+---
+# KEDA Helm installation (this would typically be done via Helm CLI)
+# helm repo add kedacore https://kedacore.github.io/charts
+# helm upgrade --install keda kedacore/keda --namespace keda --create-namespace
+
+# Service Account for KEDA Operator with IRSA
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: keda-operator
+  namespace: keda
+  annotations:
+    eks.amazonaws.com/role-arn: "PLACEHOLDER_KEDA_OPERATOR_ROLE_ARN"
+
+---
+# ClusterRole for KEDA Operator
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keda-operator
+rules:
+- apiGroups: [""]
+  resources: ["pods", "events"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+- apiGroups: ["autoscaling"]
+  resources: ["horizontalpodautoscalers"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["keda.sh"]
+  resources: ["scaledobjects", "scaledjobs", "triggerauthentications"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# ClusterRoleBinding for KEDA Operator
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keda-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: keda-operator
+subjects:
+- kind: ServiceAccount
+  name: keda-operator
+  namespace: keda
+
+---
+# TriggerAuthentication for AWS credentials (using IRSA)
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: aws-credentials
+  namespace: default
+spec:
+  podIdentity:
+    provider: aws-eks
+
+---
+# ScaledObject for crawler deployment based on SQS queue depth
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: crawler-worker-scaler
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: crawler-worker
+  minReplicaCount: 2
+  maxReplicaCount: 20
+  pollingInterval: 30
+  cooldownPeriod: 300
+  idleReplicaCount: 2
+  triggers:
+  # Primary trigger: SQS crawl queue depth
+  - type: aws-sqs-queue
+    authenticationRef:
+      name: aws-credentials
+    metadata:
+      queueURL: "PLACEHOLDER_SQS_CRAWL_QUEUE_URL"
+      queueLength: "10"
+      awsRegion: "ap-northeast-1"
+      identityOwner: pod
+  
+  # Secondary trigger: SQS discovery queue depth
+  - type: aws-sqs-queue
+    authenticationRef:
+      name: aws-credentials
+    metadata:
+      queueURL: "PLACEHOLDER_SQS_DISCOVERY_QUEUE_URL"
+      queueLength: "15"
+      awsRegion: "ap-northeast-1"
+      identityOwner: pod
+
+  # Advanced scaling behavior
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      - type: Pods
+        value: 4
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      selectPolicy: Min
+
+---
+# Alternative: ScaledObject with CloudWatch metrics (if SQS trigger is not sufficient)
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: crawler-worker-cloudwatch-scaler
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: crawler-worker
+  minReplicaCount: 2
+  maxReplicaCount: 20
+  pollingInterval: 60
+  cooldownPeriod: 300
+  triggers:
+  - type: aws-cloudwatch
+    authenticationRef:
+      name: aws-credentials
+    metadata:
+      namespace: AWS/SQS
+      metricName: ApproximateNumberOfVisibleMessages
+      targetMetricValue: "10"
+      minMetricValue: "0"
+      awsRegion: "ap-northeast-1"
+      identityOwner: pod
+      dimensionName: QueueName
+      dimensionValue: "PLACEHOLDER_SQS_CRAWL_QUEUE_NAME"
+
+---
+# KEDA Metrics Server configuration for custom metrics
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keda-metrics-server-config
+  namespace: keda
+data:
+  config.yaml: |
+    apiVersion: apiserver.config.k8s.io/v1alpha1
+    kind: AdmissionConfiguration
+    plugins:
+    - name: ValidatingAdmissionWebhook
+      configuration:
+        apiVersion: apiserver.config.k8s.io/v1alpha1
+        kind: WebhookAdmission
+        kubeConfigFile: /etc/config/kubeconfig
+
+---
+# ServiceMonitor for Prometheus monitoring (if using Prometheus)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: keda-metrics
+  namespace: keda
+spec:
+  selector:
+    matchLabels:
+      app: keda-metrics-apiserver
+  endpoints:
+  - port: https
+    scheme: https
+    tlsConfig:
+      insecureSkipVerify: true
+    path: /metrics
