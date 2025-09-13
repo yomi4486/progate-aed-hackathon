@@ -74,11 +74,13 @@ class CrawlerConfig(BaseModel):
     crawler_id: str = Field(default_factory=lambda: str(uuid4()))
 
     # AWS Configuration
-    aws_region: str = Field("ap-northeast-1")
+    aws_region: str = Field("us-east-1")
     dynamodb_table: str = Field("url-states")
     sqs_crawl_queue_url: str
     sqs_discovery_queue_url: Optional[str] = None
+    sqs_indexing_queue_url: Optional[str] = None  # Queue for indexing tasks
     s3_raw_bucket: str
+    s3_parsed_bucket: Optional[str] = None  # Bucket for parsed content (for indexing)
     redis_url: Optional[str] = None
 
     # HTTP Configuration

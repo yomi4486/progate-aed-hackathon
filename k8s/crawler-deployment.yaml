@@ -8,7 +8,7 @@ metadata:
     component: crawler
     version: v1
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: crawler-worker
@@ -25,6 +25,10 @@ spec:
       # Service account for AWS IAM permissions (IRSA)
       serviceAccountName: crawler-service-account
       
+      # Use host network to bypass CNI issues (temporary)
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      
       # Security context
       securityContext:
         runAsNonRoot: true
@@ -33,7 +37,7 @@ spec:
       
       containers:
       - name: crawler
-        image: your-ecr-repo/crawler:latest
+        image: 978888632917.dkr.ecr.us-east-1.amazonaws.com/aedhack-crawler:v5
         imagePullPolicy: Always
         
         # Container security context
@@ -44,8 +48,8 @@ spec:
             drop:
             - ALL
         
-        # Commands and args
-        command: ["python", "-m", "app.crawler.worker"]
+        # Commands and args (use virtual environment)
+        command: ["./.venv/bin/python", "-m", "app.crawler.worker"]
         args: ["run", "--environment", "prod", "--log-level", "INFO"]
         
         # Environment variables
@@ -62,22 +66,22 @@ spec:
         - secretRef:
             name: crawler-secrets
         
-        # Resources
+        # Resources (minimal for t3.small nodes)
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "250m"
-            ephemeral-storage: "1Gi"
+            memory: "128Mi"
+            cpu: "50m"
+            ephemeral-storage: "256Mi"
           limits:
-            memory: "1Gi"
-            cpu: "500m"
-            ephemeral-storage: "2Gi"
+            memory: "256Mi"
+            cpu: "200m"
+            ephemeral-storage: "512Mi"
         
         # Health probes
         livenessProbe:
           exec:
             command:
-            - python
+            - ./.venv/bin/python
             - -m
             - app.crawler.worker
             - health
@@ -89,7 +93,7 @@ spec:
         readinessProbe:
           exec:
             command:
-            - python
+            - ./.venv/bin/python
             - -m
             - app.crawler.worker
             - health
@@ -102,7 +106,7 @@ spec:
         startupProbe:
           exec:
             command:
-            - python
+            - ./.venv/bin/python
             - -m
             - app.crawler.worker
             - health
@@ -150,4 +154,4 @@ metadata:
   namespace: default
   annotations:
     # EKS IAM role association - will be updated by deployment script
-    eks.amazonaws.com/role-arn: "PLACEHOLDER_CRAWLER_SERVICE_ACCOUNT_ROLE_ARN"
+    eks.amazonaws.com/role-arn: "arn:aws:iam::978888632917:role/aedhack-prod-cluster-crawler-service-account-role"

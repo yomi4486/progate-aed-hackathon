@@ -34,7 +34,7 @@ if not os.path.isdir(MIGRATIONS_DIR):
     os.makedirs(MIGRATIONS_DIR)
 
 # DynamoDB region default (models may override)
-DEFAULT_REGION = "ap-northeast-1"
+DEFAULT_REGION = "us-east-1"
 
 
 # --- MigrationHistory model ---

@@ -3,17 +3,17 @@ environment: "devlocal"
 
 # LocalStack Configuration
 localstack_endpoint: "http://localhost:4566"
-aws_region: "ap-northeast-1"  # Match docker-compose.yml
+aws_region: "us-east-1"  # Match docker-compose.yml
 aws_access_key_id: "test"
 aws_secret_access_key: "test"
 
 # AWS Resources (LocalStack)
 dynamodb_table: "aedhack-devlocal-url-states"
-sqs_crawl_queue_url: "http://sqs.ap-northeast-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-crawl-queue"
-sqs_discovery_queue_url: "http://sqs.ap-northeast-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-discovery-queue"
-sqs_indexing_queue_url: "http://sqs.ap-northeast-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-indexing-queue"
-sqs_processing_queue_url: "http://sqs.ap-northeast-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-processing-queue"
-sqs_dlq_url: "http://sqs.ap-northeast-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-dlq"
+sqs_crawl_queue_url: "http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-crawl-queue"
+sqs_discovery_queue_url: "http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-discovery-queue"
+sqs_indexing_queue_url: "http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-indexing-queue"
+sqs_processing_queue_url: "http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-processing-queue"
+sqs_dlq_url: "http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/aedhack-devlocal-dlq"
 s3_raw_bucket: "aedhack-devlocal-raw"
 
 # Redis (disabled for LocalStack testing)

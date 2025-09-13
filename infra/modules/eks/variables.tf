@@ -171,3 +171,10 @@ variable "dynamodb_table_arn" {
   description = "ARN of the DynamoDB table"
   type        = string
 }
+
+# CNI management option
+variable "use_self_managed_cni" {
+  description = "Use self-managed VPC CNI instead of managed addon (useful when managed addon fails)"
+  type        = bool
+  default     = false
+}

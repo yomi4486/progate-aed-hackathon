@@ -2,12 +2,12 @@
 environment: "staging"
 
 # AWS Configuration (credentials from environment/IAM role)
-aws_region: "ap-northeast-1"
+aws_region: "us-east-1"
 
 # AWS Resources (staging)
 dynamodb_table: "aedhack-staging-url-states"
 # SQS URLs and S3 bucket will be provided via environment variables
-# sqs_crawl_queue_url: "https://sqs.ap-northeast-1.amazonaws.com/123456789012/aedhack-staging-crawl-queue"
+# sqs_crawl_queue_url: "https://sqs.us-east-1.amazonaws.com/123456789012/aedhack-staging-crawl-queue"
 # s3_raw_bucket: "aedhack-staging-raw"
 
 # Redis (ElastiCache)

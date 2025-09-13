@@ -5,7 +5,7 @@ set -euo pipefail
 # This script installs KEDA with proper IRSA configuration for SQS scaling
 
 CLUSTER_NAME=${1:-"aedhack-dev-cluster"}
-AWS_REGION=${2:-"ap-northeast-1"}
+AWS_REGION=${2:-"us-east-1"}
 NAMESPACE="keda"
 
 echo "Installing KEDA on EKS cluster: ${CLUSTER_NAME}"

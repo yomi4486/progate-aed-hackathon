@@ -2,7 +2,7 @@
 set -e
 
 # Configuration
-ECR_REGION=${AWS_REGION:-ap-northeast-1}
+ECR_REGION=${AWS_REGION:-us-east-1}
 ECR_REPO_NAME=${ECR_REPO_NAME:-crawler-worker}
 IMAGE_TAG=${IMAGE_TAG:-latest}
 AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}

@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
 
 # Create app user
 RUN useradd -m -u 1000 appuser
@@ -36,8 +37,8 @@ USER appuser
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -m app.crawler.worker health || exit 1
 
-# Default command
-CMD ["python", "-m", "app.crawler.worker", "run"]
+# Default command (use virtual environment)
+CMD ["./.venv/bin/python", "-m", "app.crawler.worker", "run"]
 
 FROM base AS production
 
@@ -45,8 +46,8 @@ FROM base AS production
 ENV CRAWLER_ENV=prod
 ENV LOG_LEVEL=INFO
 
-# Use production configuration by default
-CMD ["python", "-m", "app.crawler.worker", "run", "--environment", "prod", "--log-level", "INFO"]
+# Use production configuration by default (use virtual environment)
+CMD ["./.venv/bin/python", "-m", "app.crawler.worker", "run", "--environment", "prod", "--log-level", "INFO"]
 
 FROM base AS development
 
@@ -58,4 +59,4 @@ USER appuser
 ENV CRAWLER_ENV=devlocal
 ENV LOG_LEVEL=DEBUG
 
-CMD ["python", "-m", "app.crawler.worker", "run", "--environment", "devlocal", "--log-level", "DEBUG"]
+CMD ["./.venv/bin/python", "-m", "app.crawler.worker", "run", "--environment", "devlocal", "--log-level", "DEBUG"]

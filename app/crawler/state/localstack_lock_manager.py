@@ -323,7 +323,7 @@ class LocalStackDistributedLockManager:
 
             # Scan for items with expired locks
             items = await self.client.scan_table(
-                filter_expression=f"#state = :in_progress AND #ttl < :now", limit=max_cleanup
+                filter_expression="#state = :in_progress AND #ttl < :now", limit=max_cleanup
             )
 
             if not items:

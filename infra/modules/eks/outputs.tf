@@ -75,6 +75,11 @@ output "crawler_service_account_role_arn" {
   value       = aws_iam_role.crawler_service_account.arn
 }
 
+output "indexer_service_account_role_arn" {
+  description = "IAM role ARN for indexer service account (IRSA)"
+  value       = aws_iam_role.indexer_service_account.arn
+}
+
 output "cluster_autoscaler_role_arn" {
   description = "IAM role ARN for cluster autoscaler (if enabled)"
   value       = var.enable_cluster_autoscaler ? aws_iam_role.cluster_autoscaler[0].arn : null
@@ -127,7 +132,7 @@ output "kubeconfig" {
 # Add-on information
 output "vpc_cni_addon_arn" {
   description = "Amazon Resource Name (ARN) of the VPC CNI addon"
-  value       = aws_eks_addon.vpc_cni.arn
+  value       = var.use_self_managed_cni ? null : aws_eks_addon.vpc_cni[0].arn
 }
 
 output "coredns_addon_arn" {

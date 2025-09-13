@@ -1,0 +1,151 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: indexer-worker
+  namespace: default
+  labels:
+    app: indexer-worker
+    component: indexer
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: indexer-worker
+  template:
+    metadata:
+      labels:
+        app: indexer-worker
+        component: indexer
+        version: v1
+      annotations:
+        # Force pod restart on config/secret changes
+        config/hash: ""  # Set during deployment
+    spec:
+      # Service account for AWS IAM permissions (IRSA)
+      serviceAccountName: indexer-service-account
+      
+      # Use host network to bypass CNI issues (temporary)
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      
+      containers:
+      - name: indexer
+        image: 978888632917.dkr.ecr.us-east-1.amazonaws.com/aedhack-indexer:v2-mecab
+        imagePullPolicy: Always
+        
+        # Container security context
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        
+        # Commands and args (use uv installed script)
+        command: ["indexer"]
+        args: ["run", "--log-level", "INFO", "--json-logs"]
+        
+        # Environment variables
+        env:
+        - name: INDEXER_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        
+        # Environment from ConfigMap and Secret
+        envFrom:
+        - configMapRef:
+            name: indexer-config
+        - secretRef:
+            name: indexer-secrets
+        
+        # Resources (optimized for indexing workload)
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+            ephemeral-storage: "512Mi"
+          limits:
+            memory: "512Mi" 
+            cpu: "500m"
+            ephemeral-storage: "1Gi"
+        
+        # Health probes
+        livenessProbe:
+          exec:
+            command:
+            - indexer
+            - health
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        readinessProbe:
+          exec:
+            command:
+            - indexer
+            - health
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 2
+        
+        # Startup probe for slow initialization
+        startupProbe:
+          exec:
+            command:
+            - indexer
+            - health
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 12  # 60 seconds total
+        
+        # Volume mounts for writable directories
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: var-tmp
+          mountPath: /var/tmp
+      
+      # Termination grace period for graceful shutdown
+      terminationGracePeriodSeconds: 60
+      
+      # Volumes
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: var-tmp
+        emptyDir: {}
+      
+      # Node selection and affinity
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: indexer-worker
+              topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: indexer-service-account
+  namespace: default
+  annotations:
+    # EKS IAM role association - will be updated by deployment script
+    eks.amazonaws.com/role-arn: "arn:aws:iam::978888632917:role/aedhack-dev-cluster-indexer-service-account-role"

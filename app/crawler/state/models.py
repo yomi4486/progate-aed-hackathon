@@ -47,7 +47,7 @@ class URLStateModel(Model):
     class Meta:  # type: ignore[reportIncompatibleVariableOverride]
         # Table configuration
         table_name = "crawler-url-states"
-        region = "ap-northeast-1"
+        region = "us-east-1"
 
         # LocalStack support - will be updated dynamically
         host = None  # Will be set to localhost:4566 for LocalStack
@@ -156,7 +156,7 @@ class CrawlerMetricsModel(Model):
 
     class Meta:  # type: ignore[reportIncompatibleVariableOverride]
         table_name = "crawler-metrics"
-        region = "ap-northeast-1"
+        region = "us-east-1"
         billing_mode = "PAY_PER_REQUEST"
 
     # Primary key: crawler_id + timestamp (sorted by time)
