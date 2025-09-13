@@ -22,15 +22,17 @@ export default function App() {
 
   // クエリパラメータから初期値取得
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const q = params.get('q') || '';
-    const p = parseInt(params.get('page') || '1', 10);
-    setInputValue(q);
-    setQuery(q);
-    setPage(isNaN(p) ? 1 : p);
-    if (q) {
-      setSearched(true);
-      fetchSearch(q, isNaN(p) ? 1 : p, size);
+    if (Platform.OS === 'web') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q') || '';
+      const p = parseInt(params.get('page') || '1', 10);
+      setInputValue(q);
+      setQuery(q);
+      setPage(isNaN(p) ? 1 : p);
+      if (q) {
+        setSearched(true);
+        fetchSearch(q, isNaN(p) ? 1 : p, size);
+      }
     }
   }, []);
   const { width, height } = useWindowDimensions();
