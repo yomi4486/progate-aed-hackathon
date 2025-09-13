@@ -76,29 +76,29 @@ struct ContentView: View {
                 // BottomNavigationBar
                 HStack(spacing: 32) {
                     Button(action: goBack) {
-                        Image(systemName: "chevron.backward.circle.fill")
-                            .font(.system(size: 28, weight: .bold))
+                        Image(systemName: "chevron.backward")
+                            .font(.system(size: 24, weight: .regular))
                             .foregroundColor(canGoBack ? .accentColor : .gray)
                     }
                     .disabled(!canGoBack)
 
                     Button(action: goForward) {
-                        Image(systemName: "chevron.forward.circle.fill")
-                            .font(.system(size: 28, weight: .bold))
+                        Image(systemName: "chevron.forward")
+                            .font(.system(size: 24, weight: .regular))
                             .foregroundColor(canGoForward ? .accentColor : .gray)
                     }
                     .disabled(!canGoForward)
 
                     Button(action: addTab) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 32, weight: .bold))
+                        Image(systemName: "plus")
+                            .font(.system(size: 28, weight: .regular))
                             .foregroundColor(.accentColor)
                     }
 
                     Button(action: { showTabOverview = true }) {
                         ZStack {
                             Image(systemName: "square.on.square")
-                                .font(.system(size: 28, weight: .bold))
+                                .font(.system(size: 24, weight: .regular))
                                 .foregroundColor(.accentColor)
                             if tabs.count > 1 {
                                 Text("\(tabs.count)")
@@ -249,7 +249,11 @@ struct ContentView: View {
                     selectedTabId = first.id
                     urlInput = first.url.absoluteString
                 } else {
-                    urlInput = ""
+                    // タブがゼロになった場合は新しいタブを自動で作成
+                    let newTab = WebTab(url: URL(string: baseUrl)!)
+                    tabs.append(newTab)
+                    selectedTabId = newTab.id
+                    urlInput = newTab.url.absoluteString
                 }
             }
         }
