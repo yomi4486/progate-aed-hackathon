@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import './App.css';
 import { RPCClientImpl } from './rpc-client';
-import logo from './assets/logo.png';
+import logoLight from './assets/logo.png';
+import logoDark from './assets/logo_darkmode.png';
+import { useColorScheme } from './hooks/useColorScheme';
 import type { SearchHit } from './types/search';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL!;
@@ -97,6 +99,9 @@ function App() {
 
   // ページ数計算
   const totalPages = Math.max(1, Math.ceil(total / size));
+
+  const colorScheme = useColorScheme();
+  const logo = colorScheme === 'dark' ? logoDark : logoLight;
 
   return (
     <div className="search-root">
