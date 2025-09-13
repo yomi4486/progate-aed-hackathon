@@ -27,3 +27,5 @@ __pycache__/
 .pyright/
 .venv/
 .ruff_cache/
+
+node_modules/

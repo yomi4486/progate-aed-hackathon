@@ -19,3 +19,4 @@ pydantic2ts:
 
 routes2rpcc:
 	uv run routes2rpcc ./app/backend/routers/rpc.py ./app/frontend/src/rpc-client.ts
+	uv run routes2rpcc ./app/backend/routers/rpc.py ./app/mobile/src/rpc-client.ts
