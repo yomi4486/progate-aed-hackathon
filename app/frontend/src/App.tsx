@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import './App.css';
 import { RPCClientImpl } from './rpc-client';
+import logo from './assets/logo.png';
 import type { SearchHit } from './types/search';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL!;
@@ -107,7 +108,7 @@ function App() {
               onClick={() => { location.href = "/"; }}
             >
               <h1 className="search-title">
-                Progate Search
+                <img src={logo} alt="Progate Search" className="search-logo-toppage"/>
               </h1>
             </header>
             <form className="search-form" onSubmit={handleSearch} autoComplete="off">
@@ -132,7 +133,7 @@ function App() {
               onClick={() => { location.href = "/"; }}
             >
               <h1 className={`search-title ${searched ? "has-query" : ""}`}>
-                Progate Search
+                <img src={logo} alt="Progate Search" className="search-logo" />
               </h1>
             </header>
             <form className="search-form" onSubmit={handleSearch} autoComplete="off">

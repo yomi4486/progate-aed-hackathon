@@ -306,3 +306,14 @@ body {
   color: var(--color-meta);
   margin-bottom: 1rem;
 }
+
+.search-logo {
+  height: 40px;
+  vertical-align: middle;
+  margin-right: 12px;
+}
+.search-logo-toppage {
+  height: 80px;
+  vertical-align: middle;
+  margin-right: 12px;
+}
