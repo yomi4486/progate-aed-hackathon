@@ -33,7 +33,7 @@ class CrawlerSettings(BaseSettings):
     environment: str = Field("dev", description="Environment name (dev/staging/prod)")
 
     # AWS Configuration
-    aws_region: str = Field("ap-northeast-1")
+    aws_region: str = Field("us-east-1")
     aws_access_key_id: Optional[str] = None
     aws_secret_access_key: Optional[str] = None
     aws_session_token: Optional[str] = None

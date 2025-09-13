@@ -9,7 +9,7 @@ data:
   LOG_LEVEL: "INFO"
   
   # AWS Configuration
-  AWS_REGION: "ap-northeast-1"
+  AWS_REGION: "us-east-1"
   
   # Crawler Settings
   MAX_CONCURRENT_REQUESTS: "10"

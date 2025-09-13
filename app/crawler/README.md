@@ -19,7 +19,7 @@
 1. **EKS Cluster**
    ```bash
    # EKSクラスター作成 (例)
-   eksctl create cluster --name aedhack-cluster --region ap-northeast-1 --nodes 3 --node-type t3.medium
+   eksctl create cluster --name aedhack-cluster --region us-east-1 --nodes 3 --node-type t3.medium
    ```
 
 2. **DynamoDB テーブル**
@@ -29,7 +29,7 @@
      --attribute-definitions AttributeName=url_hash,AttributeType=S \
      --key-schema AttributeName=url_hash,KeyType=HASH \
      --billing-mode PAY_PER_REQUEST \
-     --region ap-northeast-1
+     --region us-east-1
    ```
 
 3. **SQS キュー**
@@ -37,17 +37,17 @@
    # クロールキュー
    aws sqs create-queue \
      --queue-name aedhack-prod-crawl-queue \
-     --region ap-northeast-1
+     --region us-east-1
    
    # 発見キュー
    aws sqs create-queue \
      --queue-name aedhack-prod-discovery-queue \
-     --region ap-northeast-1
+     --region us-east-1
    ```
 
 4. **S3 バケット**
    ```bash
-   aws s3 mb s3://aedhack-prod-raw-content --region ap-northeast-1
+   aws s3 mb s3://aedhack-prod-raw-content --region us-east-1
    ```
 
 5. **ElastiCache Redis**
@@ -56,7 +56,7 @@
      --replication-group-id aedhack-prod-redis \
      --description "AED Hackathon Redis Cluster" \
      --node-type cache.t3.micro \
-     --region ap-northeast-1
+     --region us-east-1
    ```
 
 ### IAM 権限
@@ -79,7 +79,7 @@ EKSワーカーノードまたはPod用のIAMロールに以下の権限を付�
         "dynamodb:BatchGetItem",
         "dynamodb:BatchWriteItem"
       ],
-      "Resource": "arn:aws:dynamodb:ap-northeast-1:*:table/aedhack-prod-url-states"
+      "Resource": "arn:aws:dynamodb:us-east-1:*:table/aedhack-prod-url-states"
     },
     {
       "Effect": "Allow",
@@ -90,8 +90,8 @@ EKSワーカーノードまたはPod用のIAMロールに以下の権限を付�
         "sqs:GetQueueAttributes"
       ],
       "Resource": [
-        "arn:aws:sqs:ap-northeast-1:*:aedhack-prod-crawl-queue",
-        "arn:aws:sqs:ap-northeast-1:*:aedhack-prod-discovery-queue"
+        "arn:aws:sqs:us-east-1:*:aedhack-prod-crawl-queue",
+        "arn:aws:sqs:us-east-1:*:aedhack-prod-discovery-queue"
       ]
     },
     {
@@ -113,7 +113,7 @@ EKSワーカーノードまたはPod用のIAMロールに以下の権限を付�
 
 ```bash
 export AWS_ACCOUNT_ID=123456789012
-export AWS_REGION=ap-northeast-1
+export AWS_REGION=us-east-1
 export EKS_CLUSTER_NAME=aedhack-cluster
 export ECR_REPO_NAME=crawler-worker
 ```
@@ -125,8 +125,8 @@ export ECR_REPO_NAME=crawler-worker
 ```yaml
 stringData:
   DYNAMODB_TABLE: "aedhack-prod-url-states"
-  SQS_CRAWL_QUEUE_URL: "https://sqs.ap-northeast-1.amazonaws.com/YOUR_ACCOUNT/aedhack-prod-crawl-queue"
-  SQS_DISCOVERY_QUEUE_URL: "https://sqs.ap-northeast-1.amazonaws.com/YOUR_ACCOUNT/aedhack-prod-discovery-queue"
+  SQS_CRAWL_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/YOUR_ACCOUNT/aedhack-prod-crawl-queue"
+  SQS_DISCOVERY_QUEUE_URL: "https://sqs.us-east-1.amazonaws.com/YOUR_ACCOUNT/aedhack-prod-discovery-queue"
   S3_RAW_BUCKET: "aedhack-prod-raw-content"
   REDIS_URL: "redis://your-elasticache-cluster.cache.amazonaws.com:6379/0"
 ```

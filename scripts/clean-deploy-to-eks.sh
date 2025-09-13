@@ -4,7 +4,7 @@ set -euo pipefail
 # Clean EKS deployment script - removes LocalStack state conflicts
 CLUSTER_NAME=${1:-"aedhack-prod-cluster"}
 ENVIRONMENT=${2:-"prod"}
-AWS_REGION=${3:-"ap-northeast-1"}
+AWS_REGION=${3:-"us-east-1"}
 ECR_REPOSITORY=${4:-""}
 IMAGE_TAG=${5:-"latest"}
 

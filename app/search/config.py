@@ -66,7 +66,7 @@ class SearchServiceConfig:
         enable_vector_search = os.getenv("SEARCH_ENABLE_VECTOR_SEARCH", "true").lower() == "true"
         if enable_vector_search:
             bedrock_config = BedrockConfig(
-                region=os.getenv("SEARCH_BEDROCK_REGION", "ap-northeast-1"),
+                region=os.getenv("SEARCH_BEDROCK_REGION", "us-east-1"),
                 embedding_model=os.getenv("SEARCH_BEDROCK_EMBEDDING_MODEL", "amazon.titan-embed-text-v1"),
             )
 

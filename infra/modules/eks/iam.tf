@@ -241,8 +241,8 @@ resource "aws_iam_policy" "indexer_service_account" {
           "bedrock:InvokeModel"
         ]
         Resource = [
-          "arn:aws:bedrock:ap-northeast-1::foundation-model/amazon.titan-embed-text-v1",
-          "arn:aws:bedrock:ap-northeast-1::foundation-model/amazon.titan-embed-text-v2:0"
+          "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v1",
+          "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0"
         ]
       },
       # OpenSearch permissions (for indexing)
@@ -255,7 +255,7 @@ resource "aws_iam_policy" "indexer_service_account" {
           "es:ESHttpHead"
         ]
         Resource = [
-          "arn:aws:es:ap-northeast-1:*:domain/*"
+          "arn:aws:es:us-east-1:*:domain/*"
         ]
       }
     ]

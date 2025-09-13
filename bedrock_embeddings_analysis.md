@@ -118,8 +118,8 @@ INDEXER_S3_PARSED_BUCKET=your-parsed-content-bucket
 INDEXER_OPENSEARCH_ENDPOINT=https://your-opensearch-domain
 
 # Optional (with defaults)
-INDEXER_AWS_REGION=ap-northeast-1
-INDEXER_BEDROCK_REGION=ap-northeast-1
+INDEXER_AWS_REGION=us-east-1
+INDEXER_BEDROCK_REGION=us-east-1
 INDEXER_BEDROCK_EMBEDDING_MODEL=amazon.titan-embed-text-v1
 INDEXER_ENABLE_EMBEDDINGS=true
 INDEXER_BATCH_SIZE=5

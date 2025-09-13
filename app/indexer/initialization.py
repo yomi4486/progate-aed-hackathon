@@ -189,7 +189,7 @@ async def initialize_for_environment(
     opensearch_endpoint: str,
     opensearch_username: Optional[str] = None,
     opensearch_password: Optional[str] = None,
-    bedrock_region: str = "ap-northeast-1",
+    bedrock_region: str = "us-east-1",
     enable_embeddings: bool = True,
 ) -> bool:
     """

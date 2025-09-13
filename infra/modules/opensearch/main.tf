@@ -120,9 +120,14 @@ resource "aws_iam_service_linked_role" "opensearch" {
 
 # Random password for OpenSearch admin user
 resource "random_password" "opensearch_admin" {
-  count   = var.use_localstack ? 0 : 1
-  length  = 16
-  special = true
+  count            = var.use_localstack ? 0 : 1
+  length           = 16
+  special          = true
+  min_upper        = 1
+  min_lower        = 1
+  min_numeric      = 1
+  min_special      = 1
+  override_special = "!@#$%^&*()_+-=[]{}|;:,.<>?"
 }
 
 resource "aws_opensearch_domain" "this" {

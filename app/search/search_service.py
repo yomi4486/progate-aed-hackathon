@@ -91,8 +91,138 @@ class SearchService:
             logger.error(f"Search failed for query '{query.q}': {e}")
             return SearchResponse(total=0, hits=[], page=query.page, size=query.size)
 
+    async def _execute_bm25_search(self, query: SearchQuery, size: int) -> List[Dict[str, Any]]:
+        """Execute BM25 search and return raw hits."""
+        # Detect if query contains Japanese characters
+        is_japanese_query = self._is_japanese_query(query.q)
+        
+        # Choose appropriate fields based on language
+        if is_japanese_query:
+            title_field = "title"  # Uses japanese_analyzer
+            content_field = "content"  # Uses japanese_analyzer  
+            keywords_field = "keywords"  # Uses japanese_analyzer
+            multi_match_fields = ["title^2", "content", "keywords"]
+        else:
+            title_field = "title.standard"  # Uses standard analyzer for English
+            content_field = "content.standard"  # Uses standard analyzer
+            keywords_field = "keywords.standard"  # Uses standard analyzer
+            multi_match_fields = ["title.standard^2", "content.standard", "keywords.standard"]
+        
+        search_body = {
+            "size": size,
+            "query": {
+                "bool": {
+                    "should": [
+                        {"match": {title_field: {"query": query.q, "boost": 3.0}}},
+                        {"match": {content_field: {"query": query.q, "boost": 1.0}}},
+                        {"match": {keywords_field: {"query": query.q, "boost": 2.0}}},
+                        {
+                            "multi_match": {
+                                "query": query.q,
+                                "fields": multi_match_fields,
+                                "type": "cross_fields",
+                                "fuzziness": "AUTO" if not is_japanese_query else "0",  # No fuzziness for Japanese
+                                "boost": 0.5,
+                            }
+                        },
+                    ],
+                    "minimum_should_match": 1,
+                }
+            },
+            "highlight": {
+                "fields": {"title": {}, "content": {"fragment_size": 150, "number_of_fragments": 3}}
+            }
+        }
+
+        # Add filters
+        filters = []
+        if query.lang:
+            filters.append({"term": {"language": query.lang}})
+        if query.site:
+            filters.append({"term": {"domain": query.site}})
+        
+        if filters:
+            search_body["query"]["bool"]["filter"] = filters
+
+        response = await self.opensearch_client.search_raw(search_body)
+        return response["hits"]["hits"]
+
+    async def _execute_vector_search(self, query: SearchQuery, query_embedding: List[float], size: int) -> List[Dict[str, Any]]:
+        """Execute vector similarity search and return raw hits."""
+        search_body = {
+            "size": size,
+            "query": {
+                "knn": {
+                    "embedding": {
+                        "vector": query_embedding,
+                        "k": size,
+                    }
+                }
+            },
+            "highlight": {
+                "fields": {"title": {}, "content": {"fragment_size": 150, "number_of_fragments": 3}}
+            }
+        }
+
+        # Add filters
+        filters = []
+        if query.lang:
+            filters.append({"term": {"language": query.lang}})
+        if query.site:
+            filters.append({"term": {"domain": query.site}})
+        
+        if filters:
+            search_body["query"] = {"bool": {"must": [search_body["query"]], "filter": filters}}
+
+        response = await self.opensearch_client.search_raw(search_body)
+        return response["hits"]["hits"]
+
+    def _apply_rrf_fusion(self, bm25_hits: List[Dict[str, Any]], vector_hits: List[Dict[str, Any]], target_size: int) -> List[Dict[str, Any]]:
+        """Apply Reciprocal Rank Fusion to combine BM25 and vector search results."""
+        # Create ranking maps
+        bm25_ranks = {hit["_id"]: i + 1 for i, hit in enumerate(bm25_hits)}
+        vector_ranks = {hit["_id"]: i + 1 for i, hit in enumerate(vector_hits)}
+        
+        # Collect all unique documents
+        all_docs = {}
+        for hit in bm25_hits:
+            all_docs[hit["_id"]] = hit
+        for hit in vector_hits:
+            all_docs[hit["_id"]] = hit
+        
+        # Calculate RRF scores
+        rrf_scores = {}
+        for doc_id in all_docs:
+            bm25_rank = bm25_ranks.get(doc_id, len(bm25_hits) + 1)
+            vector_rank = vector_ranks.get(doc_id, len(vector_hits) + 1)
+            
+            # RRF formula: 1/(rank + k) where k is typically 60
+            rrf_score = (1.0 / (bm25_rank + self.rrf_rank_constant)) + (1.0 / (vector_rank + self.rrf_rank_constant))
+            rrf_scores[doc_id] = rrf_score
+        
+        # Sort by RRF score (descending)
+        sorted_docs = sorted(all_docs.items(), key=lambda x: rrf_scores[x[0]], reverse=True)
+        
+        # Return top results with RRF score as _score
+        fused_results = []
+        for doc_id, hit in sorted_docs[:target_size * 2]:  # Get more for pagination
+            hit["_score"] = rrf_scores[doc_id]
+            fused_results.append(hit)
+        
+        return fused_results
+    
+    def _is_japanese_query(self, query_text: str) -> bool:
+        """Check if the query contains Japanese characters."""
+        import re
+        japanese_pattern = re.compile(r'[ひらがなカタカナ一-龯]')
+        japanese_chars = len(japanese_pattern.findall(query_text))
+        total_chars = len(query_text.replace(' ', ''))  # Exclude spaces
+        
+        # Consider it Japanese if more than 30% of non-space characters are Japanese
+        return japanese_chars > 0 and (japanese_chars / max(total_chars, 1)) > 0.3
+
     async def _hybrid_search(self, query: SearchQuery, from_: int) -> Dict[str, Any]:
-        """Perform hybrid BM25 + vector search."""
+        """Perform hybrid BM25 + vector search using manual RRF."""
 
         # Generate query embedding
         query_embedding = None
@@ -103,65 +233,44 @@ class SearchService:
             logger.warning("Failed to generate query embedding, falling back to BM25")
             return await self._bm25_search(query, from_)
 
-        # Build hybrid search query
-        search_body = {
-            "size": min(query.size, self.max_results),
-            "from": from_,
-            "query": {
-                "hybrid": {
-                    "queries": [
-                        # BM25 query
-                        {
-                            "multi_match": {
-                                "query": query.q,
-                                "fields": ["title^2", "content", "keywords"],
-                                "type": "best_fields",
-                                "fuzziness": "AUTO",
-                            }
-                        },
-                        # Vector similarity query
-                        {
-                            "knn": {
-                                "embedding": {
-                                    "vector": query_embedding,
-                                    "k": min(query.size * 2, 20),  # Get more candidates for reranking
-                                }
-                            }
-                        },
-                    ]
-                }
-            },
+        # Execute BM25 and vector searches separately, then combine with RRF
+        bm25_results = await self._execute_bm25_search(query, query.size * 2)  # Get more results for fusion
+        vector_results = await self._execute_vector_search(query, query_embedding, query.size * 2)
+
+        # Apply RRF fusion
+        fused_results = self._apply_rrf_fusion(bm25_results, vector_results, query.size)
+
+        # Apply pagination
+        total_hits = len(fused_results)
+        paginated_hits = fused_results[from_:from_ + query.size]
+
+        # Format as OpenSearch response
+        return {
+            "hits": {
+                "total": {"value": total_hits, "relation": "eq"},
+                "hits": paginated_hits
+            }
         }
-
-        # Add filters based on existing schema
-        filters = []
-        if query.lang:
-            filters.append({"term": {"language": query.lang}})
-        if query.site:
-            filters.append({"term": {"domain": query.site}})
-
-        if filters:
-            search_body["query"] = {"bool": {"must": [search_body["query"]], "filter": filters}}
-
-        # Add highlights
-        search_body["highlight"] = {
-            "fields": {"title": {}, "content": {"fragment_size": 150, "number_of_fragments": 3}}
-        }
-
-        # Add sorting if specified
-        if query.sort:
-            if query.sort == "_score":
-                search_body["sort"] = [{"_score": {"order": "desc"}}]
-            elif query.sort == "published_at":
-                search_body["sort"] = [{"fetched_at": {"order": "desc"}}]  # Use fetched_at as proxy
-            elif query.sort == "popularity_score":
-                search_body["sort"] = [{"processing_priority": {"order": "desc"}}]  # Use priority as proxy
-
-        # Execute search
-        return await self.opensearch_client.search_raw(search_body)
 
     async def _bm25_search(self, query: SearchQuery, from_: int) -> Dict[str, Any]:
         """Perform BM25 text search only."""
+        
+        # Detect if query contains Japanese characters
+        is_japanese_query = self._is_japanese_query(query.q)
+        
+        # Choose appropriate fields based on language
+        if is_japanese_query:
+            title_field = "title"  # Uses japanese_analyzer
+            content_field = "content"  # Uses japanese_analyzer  
+            keywords_field = "keywords"  # Uses japanese_analyzer
+            multi_match_fields = ["title^2", "content", "keywords"]
+            fuzziness = "0"  # No fuzziness for Japanese
+        else:
+            title_field = "title.standard"  # Uses standard analyzer for English
+            content_field = "content.standard"  # Uses standard analyzer
+            keywords_field = "keywords.standard"  # Uses standard analyzer
+            multi_match_fields = ["title.standard^2", "content.standard", "keywords.standard"]
+            fuzziness = "AUTO"  # Use fuzziness for English
 
         search_body = {
             "size": min(query.size, self.max_results),
@@ -170,18 +279,18 @@ class SearchService:
                 "bool": {
                     "should": [
                         # Exact title match (highest boost)
-                        {"match": {"title": {"query": query.q, "boost": 3.0}}},
+                        {"match": {title_field: {"query": query.q, "boost": 3.0}}},
                         # Content match
-                        {"match": {"content": {"query": query.q, "boost": 1.0}}},
+                        {"match": {content_field: {"query": query.q, "boost": 1.0}}},
                         # Keywords match
-                        {"match": {"keywords": {"query": query.q, "boost": 2.0}}},
+                        {"match": {keywords_field: {"query": query.q, "boost": 2.0}}},
                         # Multi-field match with fuzziness
                         {
                             "multi_match": {
                                 "query": query.q,
-                                "fields": ["title^2", "content", "keywords"],
+                                "fields": multi_match_fields,
                                 "type": "cross_fields",
-                                "fuzziness": "AUTO",
+                                "fuzziness": fuzziness,
                                 "boost": 0.5,
                             }
                         },

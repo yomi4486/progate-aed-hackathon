@@ -8,7 +8,7 @@ metadata:
     component: indexer
 data:
   # AWS Configuration
-  INDEXER_AWS_REGION: "ap-northeast-1"
+  INDEXER_AWS_REGION: "us-east-1"
   
   # Processing Configuration
   INDEXER_BATCH_SIZE: "5"
@@ -26,7 +26,7 @@ data:
   INDEXER_OPENSEARCH_VERIFY_CERTS: "false"  # For development - set to true in production
   
   # Bedrock Configuration
-  INDEXER_BEDROCK_REGION: "ap-northeast-1"
+  INDEXER_BEDROCK_REGION: "us-east-1"
   INDEXER_BEDROCK_EMBEDDING_MODEL: "amazon.titan-embed-text-v1"
   
   # Logging Configuration

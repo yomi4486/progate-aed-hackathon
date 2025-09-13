@@ -198,10 +198,21 @@ class OpenSearchClient:
                     "domain": {"type": "keyword"},
                     "title": {
                         "type": "text",
-                        "analyzer": "standard",
-                        "fields": {"keyword": {"type": "keyword", "ignore_above": 256}},
+                        "analyzer": "japanese_analyzer",
+                        "search_analyzer": "japanese_analyzer",
+                        "fields": {
+                            "keyword": {"type": "keyword", "ignore_above": 256},
+                            "standard": {"type": "text", "analyzer": "standard"}  # Fallback for non-Japanese
+                        },
                     },
-                    "content": {"type": "text", "analyzer": "standard"},
+                    "content": {
+                        "type": "text", 
+                        "analyzer": "japanese_analyzer",
+                        "search_analyzer": "japanese_analyzer",
+                        "fields": {
+                            "standard": {"type": "text", "analyzer": "standard"}  # Fallback for non-Japanese
+                        }
+                    },
                     "content_type": {"type": "keyword"},
                     "language": {"type": "keyword"},
                     "fetched_at": {"type": "date", "format": "strict_date_optional_time||epoch_millis"},
@@ -209,7 +220,15 @@ class OpenSearchClient:
                     "content_length": {"type": "integer"},
                     "processing_priority": {"type": "integer"},
                     "status_code": {"type": "integer"},
-                    "keywords": {"type": "text", "fields": {"keyword": {"type": "keyword"}}},
+                    "keywords": {
+                        "type": "text", 
+                        "analyzer": "japanese_analyzer",
+                        "search_analyzer": "japanese_analyzer",
+                        "fields": {
+                            "keyword": {"type": "keyword"},
+                            "standard": {"type": "text", "analyzer": "standard"}
+                        }
+                    },
                     "categories": {"type": "keyword"},
                     "embedding": {
                         "type": "knn_vector",
@@ -231,7 +250,19 @@ class OpenSearchClient:
                         "japanese_analyzer": {
                             "type": "custom",
                             "tokenizer": "kuromoji_tokenizer",
-                            "filter": ["kuromoji_baseform", "kuromoji_part_of_speech", "cjk_width", "lowercase"],
+                            "filter": [
+                                "kuromoji_baseform",
+                                "kuromoji_part_of_speech",
+                                "cjk_width",
+                                "lowercase",
+                                "kuromoji_stemmer"
+                            ],
+                        }
+                    },
+                    "tokenizer": {
+                        "kuromoji_tokenizer": {
+                            "type": "kuromoji_tokenizer",
+                            "mode": "search"
                         }
                     }
                 },

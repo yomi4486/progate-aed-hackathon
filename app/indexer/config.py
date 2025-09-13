@@ -25,7 +25,7 @@ class OpenSearchConfig:
 class BedrockConfig:
     """Bedrock client configuration."""
 
-    region: str = "ap-northeast-1"
+    region: str = "us-east-1"
     embedding_model: str = "amazon.titan-embed-text-v1"
     max_tokens: int = 8192
     timeout: int = 30
@@ -41,7 +41,7 @@ class IndexerConfig:
     opensearch_config: OpenSearchConfig
 
     # Optional fields (with defaults)
-    aws_region: str = "ap-northeast-1"
+    aws_region: str = "us-east-1"
     batch_size: int = 5
     poll_interval_seconds: int = 10
     long_poll_seconds: int = 20
@@ -82,12 +82,12 @@ class IndexerConfig:
         enable_embeddings = os.getenv("INDEXER_ENABLE_EMBEDDINGS", "true").lower() == "true"
         if enable_embeddings:
             bedrock_config = BedrockConfig(
-                region=os.getenv("INDEXER_BEDROCK_REGION", "ap-northeast-1"),
+                region=os.getenv("INDEXER_BEDROCK_REGION", "us-east-1"),
                 embedding_model=os.getenv("INDEXER_BEDROCK_EMBEDDING_MODEL", "amazon.titan-embed-text-v1"),
             )
 
         return cls(
-            aws_region=os.getenv("INDEXER_AWS_REGION", "ap-northeast-1"),
+            aws_region=os.getenv("INDEXER_AWS_REGION", "us-east-1"),
             sqs_indexing_queue_url=sqs_indexing_queue_url,
             s3_parsed_bucket=s3_parsed_bucket,
             batch_size=int(os.getenv("INDEXER_BATCH_SIZE", "5")),

@@ -37,7 +37,7 @@ spec:
       
       containers:
       - name: crawler
-        image: 412381775359.dkr.ecr.ap-northeast-1.amazonaws.com/aedhack-crawler:v5
+        image: 978888632917.dkr.ecr.us-east-1.amazonaws.com/aedhack-crawler:v5
         imagePullPolicy: Always
         
         # Container security context
@@ -154,4 +154,4 @@ metadata:
   namespace: default
   annotations:
     # EKS IAM role association - will be updated by deployment script
-    eks.amazonaws.com/role-arn: "arn:aws:iam::412381775359:role/aedhack-prod-cluster-crawler-service-account-role"
+    eks.amazonaws.com/role-arn: "arn:aws:iam::978888632917:role/aedhack-prod-cluster-crawler-service-account-role"

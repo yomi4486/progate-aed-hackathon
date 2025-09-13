@@ -28,9 +28,9 @@ spec:
     authenticationRef:
       name: aws-credentials
     metadata:
-      queueURL: "https://sqs.ap-northeast-1.amazonaws.com/412381775359/aedhack-prod-url"
+      queueURL: "https://sqs.us-east-1.amazonaws.com/978888632917/aedhack-prod-url"
       queueLength: "5"  # Scale when queue has 5+ messages
-      awsRegion: "ap-northeast-1"
+      awsRegion: "us-east-1"
       identityOwner: pod
 
   # Scaling configuration

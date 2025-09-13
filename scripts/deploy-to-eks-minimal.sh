@@ -4,7 +4,7 @@ set -euo pipefail
 # Minimal EKS deployment script - skips OpenSearch and problematic components
 CLUSTER_NAME=${1:-"aedhack-prod-cluster"}
 ENVIRONMENT=${2:-"prod"}
-AWS_REGION=${3:-"ap-northeast-1"}
+AWS_REGION=${3:-"us-east-1"}
 ECR_REPOSITORY=${4:-""}
 IMAGE_TAG=${5:-"latest"}
 
@@ -77,7 +77,7 @@ variable "use_localstack" {
 variable "aws_region" {
   description = "AWS region"
   type        = string
-  default     = "ap-northeast-1"
+  default     = "us-east-1"
 }
 
 variable "localstack_endpoint" {
