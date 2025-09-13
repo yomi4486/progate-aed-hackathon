@@ -177,6 +177,98 @@ resource "aws_iam_role_policy_attachment" "crawler_service_account" {
   role       = aws_iam_role.crawler_service_account.name
 }
 
+# IAM Role for Indexer Service Account (IRSA)
+resource "aws_iam_role" "indexer_service_account" {
+  name = "${var.cluster_name}-indexer-service-account-role"
+
+  assume_role_policy = jsonencode({
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Condition = {
+        StringEquals = {
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:default:indexer-service-account"
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud" = "sts.amazonaws.com"
+        }
+      }
+    }]
+    Version = "2012-10-17"
+  })
+
+  tags = local.common_tags
+}
+
+# Custom policy for indexer service account
+resource "aws_iam_policy" "indexer_service_account" {
+  name        = "${var.cluster_name}-indexer-service-account-policy"
+  description = "Policy for indexer service account to access AWS resources"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      # SQS permissions (indexing queue)
+      {
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl"
+        ]
+        Resource = [
+          var.sqs_index_queue_arn
+        ]
+      },
+      # S3 permissions (read parsed content)
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          var.s3_parsed_bucket_arn,
+          "${var.s3_parsed_bucket_arn}/*"
+        ]
+      },
+      # Bedrock permissions (for embeddings)
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel"
+        ]
+        Resource = [
+          "arn:aws:bedrock:ap-northeast-1::foundation-model/amazon.titan-embed-text-v1",
+          "arn:aws:bedrock:ap-northeast-1::foundation-model/amazon.titan-embed-text-v2:0"
+        ]
+      },
+      # OpenSearch permissions (for indexing)
+      {
+        Effect = "Allow"
+        Action = [
+          "es:ESHttpPost",
+          "es:ESHttpPut",
+          "es:ESHttpGet",
+          "es:ESHttpHead"
+        ]
+        Resource = [
+          "arn:aws:es:ap-northeast-1:*:domain/*"
+        ]
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "indexer_service_account" {
+  policy_arn = aws_iam_policy.indexer_service_account.arn
+  role       = aws_iam_role.indexer_service_account.name
+}
+
 # VPC CNI Role for add-on
 resource "aws_iam_role" "vpc_cni" {
   name = "${var.cluster_name}-vpc-cni-role"
@@ -231,7 +323,7 @@ resource "aws_iam_role" "ebs_csi" {
 }
 
 resource "aws_iam_role_policy_attachment" "ebs_csi" {
-  policy_arn = "arn:aws:iam::aws:policy/service-role/Amazon_EBS_CSI_DriverPolicy"
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
   role       = aws_iam_role.ebs_csi.name
 }
 

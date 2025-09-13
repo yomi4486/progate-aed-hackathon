@@ -1,0 +1,56 @@
+# TriggerAuthentication for AWS credentials (using IRSA)
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: indexer-aws-credentials
+  namespace: default
+spec:
+  podIdentity:
+    provider: aws-eks
+
+---
+# ScaledObject for indexer deployment based on SQS indexing queue depth
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: indexer-worker-scaler
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: indexer-worker
+  minReplicaCount: 1
+  maxReplicaCount: 5  # Conservative limit for indexing workload
+  pollingInterval: 15  # Check every 15 seconds
+  cooldownPeriod: 180  # Wait 3 minutes before scaling down
+  triggers:
+  # Primary trigger: SQS indexing queue depth
+  - type: aws-sqs-queue
+    authenticationRef:
+      name: indexer-aws-credentials
+    metadata:
+      queueURL: "https://sqs.ap-northeast-1.amazonaws.com/412381775359/aedhack-dev-index"
+      queueLength: "3"  # Scale when queue has 3+ messages (indexing is more resource-intensive)
+      awsRegion: "ap-northeast-1"
+      identityOwner: pod
+
+  # Scaling configuration
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 30  # Quick scale up for pending indexing
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 30
+          - type: Pods
+            value: 1
+            periodSeconds: 30
+          selectPolicy: Max
+        scaleDown:
+          stabilizationWindowSeconds: 180  # Slower scale down to handle bursts
+          policies:
+          - type: Percent
+            value: 25
+            periodSeconds: 60
+          selectPolicy: Min

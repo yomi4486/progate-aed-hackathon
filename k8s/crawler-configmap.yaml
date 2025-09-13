@@ -18,6 +18,7 @@ data:
   
   # Rate Limiting
   DEFAULT_QPS_PER_DOMAIN: "1"
+  DOMAIN_QPS_OVERRIDES: "{}"
   
   # Retry Configuration
   MAX_RETRIES: "3"

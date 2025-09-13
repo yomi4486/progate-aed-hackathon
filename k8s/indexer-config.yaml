@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: indexer-config
+  namespace: default
+  labels:
+    app: indexer-worker
+    component: indexer
+data:
+  # AWS Configuration
+  INDEXER_AWS_REGION: "ap-northeast-1"
+  
+  # Processing Configuration
+  INDEXER_BATCH_SIZE: "5"
+  INDEXER_POLL_INTERVAL_SECONDS: "10"
+  INDEXER_LONG_POLL_SECONDS: "20"
+  INDEXER_MESSAGE_VISIBILITY_TIMEOUT: "300"
+  
+  # Feature Flags
+  INDEXER_ENABLE_EMBEDDINGS: "true"
+  INDEXER_ENABLE_CONTENT_PREPROCESSING: "true"
+  
+  # OpenSearch Configuration
+  INDEXER_OPENSEARCH_INDEX: "documents-dev"
+  INDEXER_OPENSEARCH_USE_SSL: "true"
+  INDEXER_OPENSEARCH_VERIFY_CERTS: "false"  # For development - set to true in production
+  
+  # Bedrock Configuration
+  INDEXER_BEDROCK_REGION: "ap-northeast-1"
+  INDEXER_BEDROCK_EMBEDDING_MODEL: "amazon.titan-embed-text-v1"
+  
+  # Logging Configuration
+  INDEXER_LOG_LEVEL: "INFO"
+  INDEXER_JSON_LOGS: "true"

@@ -1,29 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: crawler-worker
+  name: indexer-worker
   namespace: default
   labels:
-    app: crawler-worker
-    component: crawler
+    app: indexer-worker
+    component: indexer
     version: v1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: crawler-worker
+      app: indexer-worker
   template:
     metadata:
       labels:
-        app: crawler-worker
-        component: crawler
+        app: indexer-worker
+        component: indexer
         version: v1
       annotations:
         # Force pod restart on config/secret changes
         config/hash: ""  # Set during deployment
     spec:
       # Service account for AWS IAM permissions (IRSA)
-      serviceAccountName: crawler-service-account
+      serviceAccountName: indexer-service-account
       
       # Use host network to bypass CNI issues (temporary)
       hostNetwork: true
@@ -36,8 +36,8 @@ spec:
         fsGroup: 1000
       
       containers:
-      - name: crawler
-        image: 412381775359.dkr.ecr.ap-northeast-1.amazonaws.com/aedhack-crawler:v5
+      - name: indexer
+        image: 412381775359.dkr.ecr.ap-northeast-1.amazonaws.com/aedhack-indexer:v2-mecab
         imagePullPolicy: Always
         
         # Container security context
@@ -48,42 +48,40 @@ spec:
             drop:
             - ALL
         
-        # Commands and args (use virtual environment)
-        command: ["./.venv/bin/python", "-m", "app.crawler.worker"]
-        args: ["run", "--environment", "prod", "--log-level", "INFO"]
+        # Commands and args (use uv installed script)
+        command: ["indexer"]
+        args: ["run", "--log-level", "INFO", "--json-logs"]
         
         # Environment variables
         env:
-        - name: CRAWLER_ID
+        - name: INDEXER_ID
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
         
-        # Environment from ConfigMap
+        # Environment from ConfigMap and Secret
         envFrom:
         - configMapRef:
-            name: crawler-config
+            name: indexer-config
         - secretRef:
-            name: crawler-secrets
+            name: indexer-secrets
         
-        # Resources (minimal for t3.small nodes)
+        # Resources (optimized for indexing workload)
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "50m"
-            ephemeral-storage: "256Mi"
-          limits:
             memory: "256Mi"
-            cpu: "200m"
+            cpu: "100m"
             ephemeral-storage: "512Mi"
+          limits:
+            memory: "512Mi" 
+            cpu: "500m"
+            ephemeral-storage: "1Gi"
         
         # Health probes
         livenessProbe:
           exec:
             command:
-            - ./.venv/bin/python
-            - -m
-            - app.crawler.worker
+            - indexer
             - health
           initialDelaySeconds: 30
           periodSeconds: 30
@@ -93,9 +91,7 @@ spec:
         readinessProbe:
           exec:
             command:
-            - ./.venv/bin/python
-            - -m
-            - app.crawler.worker
+            - indexer
             - health
           initialDelaySeconds: 10
           periodSeconds: 10
@@ -106,9 +102,7 @@ spec:
         startupProbe:
           exec:
             command:
-            - ./.venv/bin/python
-            - -m
-            - app.crawler.worker
+            - indexer
             - health
           initialDelaySeconds: 5
           periodSeconds: 5
@@ -143,15 +137,15 @@ spec:
             podAffinityTerm:
               labelSelector:
                 matchLabels:
-                  app: crawler-worker
+                  app: indexer-worker
               topologyKey: kubernetes.io/hostname
 
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: crawler-service-account
+  name: indexer-service-account
   namespace: default
   annotations:
     # EKS IAM role association - will be updated by deployment script
-    eks.amazonaws.com/role-arn: "arn:aws:iam::412381775359:role/aedhack-prod-cluster-crawler-service-account-role"
+    eks.amazonaws.com/role-arn: "arn:aws:iam::412381775359:role/aedhack-dev-cluster-indexer-service-account-role"

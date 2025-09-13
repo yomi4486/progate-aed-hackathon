@@ -78,7 +78,9 @@ class CrawlerConfig(BaseModel):
     dynamodb_table: str = Field("url-states")
     sqs_crawl_queue_url: str
     sqs_discovery_queue_url: Optional[str] = None
+    sqs_indexing_queue_url: Optional[str] = None  # Queue for indexing tasks
     s3_raw_bucket: str
+    s3_parsed_bucket: Optional[str] = None  # Bucket for parsed content (for indexing)
     redis_url: Optional[str] = None
 
     # HTTP Configuration

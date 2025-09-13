@@ -12,7 +12,7 @@ variable "env" {
 variable "use_localstack" {
   description = "Whether to use LocalStack for local development"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "aws_region" {
@@ -50,12 +50,20 @@ module "ddb" {
 }
 
 module "opensearch" {
-  source         = "./modules/opensearch"
-  domain_name    = "${local.project}-${local.env}"
+  count         = var.use_localstack ? 0 : 1
+  source        = "./modules/opensearch"
+  domain_name   = "${local.project}-${local.env}-search"
+  environment   = local.env
+  vpc_id        = module.network.vpc_id
+  subnet_ids    = [module.network.private_subnet_ids[0]]  # Single subnet for single-node deployment
+  
+  # Allow access from VPC and specific CIDR blocks
+  allowed_cidr_blocks = []
+  
   use_localstack = var.use_localstack
 }
 
-# EKS cluster for crawler workloads (only in non-LocalStack environments)
+# EKS cluster for crawler workloads (simplified without KMS encryption)
 module "eks" {
   count        = var.use_localstack ? 0 : 1
   source       = "./modules/eks"
@@ -67,10 +75,10 @@ module "eks" {
   vpc_id             = module.network.vpc_id
   subnet_ids         = module.network.all_subnet_ids
   private_subnet_ids = module.network.private_subnet_ids
-  allowed_cidrs      = ["0.0.0.0/0"] # Restrict this in production
+  allowed_cidrs      = ["0.0.0.0/0"]
 
-  # Node configuration
-  node_instance_types   = ["t3.medium", "t3.large"]
+  # Node configuration - using smaller instances for testing
+  node_instance_types   = ["t3.small", "t3.medium"]
   node_desired_capacity = 2
   node_min_capacity     = 1
   node_max_capacity     = 10
@@ -88,9 +96,11 @@ module "eks" {
   # Feature flags
   enable_cluster_autoscaler = true
   enable_dedicated_nodes    = false
-  enable_ssh_access         = true
+  enable_ssh_access         = false
+  use_self_managed_cni      = true  # Using self-managed CNI due to managed addon issues
 }
 
+# Essential outputs
 output "vpc_id" { value = module.network.vpc_id }
 output "s3_raw_bucket" { value = module.storage.raw_bucket }
 output "s3_parsed_bucket" { value = module.storage.parsed_bucket }
@@ -99,9 +109,8 @@ output "sqs_url_queue" { value = module.queue.url_queue_url }
 output "sqs_discovery_queue" { value = module.queue.discovery_queue_url }
 output "sqs_index_queue" { value = module.queue.index_queue_url }
 output "ddb_table" { value = module.ddb.table_name }
-output "opensearch_endpoint" { value = module.opensearch.endpoint }
 
-# EKS outputs (only when EKS is deployed)
+# EKS outputs
 output "eks_cluster_id" {
   value = var.use_localstack ? null : module.eks[0].cluster_id
 }
@@ -118,23 +127,24 @@ output "eks_crawler_service_account_role_arn" {
   value = var.use_localstack ? null : module.eks[0].crawler_service_account_role_arn
 }
 
-output "eks_cluster_certificate_authority_data" {
-  value     = var.use_localstack ? null : module.eks[0].cluster_certificate_authority_data
+output "eks_indexer_service_account_role_arn" {
+  value = var.use_localstack ? null : module.eks[0].indexer_service_account_role_arn
+}
+
+# OpenSearch outputs
+output "opensearch_endpoint" {
+  value = var.use_localstack ? null : module.opensearch[0].endpoint
+}
+
+output "opensearch_domain_arn" {
+  value = var.use_localstack ? null : module.opensearch[0].domain_arn
+}
+
+output "opensearch_kibana_endpoint" {
+  value = var.use_localstack ? null : module.opensearch[0].kibana_endpoint
+}
+
+output "opensearch_admin_password" {
+  value     = var.use_localstack ? null : module.opensearch[0].admin_password
   sensitive = true
-}
-
-# Convenience outputs for LocalStack-only: normalize URLs to plain localhost:4566
-output "sqs_url_queue_local" {
-  value       = replace(module.queue.url_queue_url, "http://sqs.${var.aws_region}.localhost.localstack.cloud:4566", "http://localhost:4566")
-  description = "SQS URL (localhost form)"
-}
-
-output "sqs_index_queue_local" {
-  value       = replace(module.queue.index_queue_url, "http://sqs.${var.aws_region}.localhost.localstack.cloud:4566", "http://localhost:4566")
-  description = "SQS Index URL (localhost form)"
-}
-
-output "localstack_edge_endpoint" {
-  value       = var.localstack_endpoint
-  description = "LocalStack edge endpoint (http://localhost:4566)"
 }

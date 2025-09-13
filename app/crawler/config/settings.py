@@ -5,9 +5,11 @@ Uses pydantic-settings to load configuration from environment variables
 and YAML files with proper validation.
 """
 
+import json
 import os
+import re
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import yaml
 from pydantic import Field, field_validator, model_validator
@@ -41,7 +43,9 @@ class CrawlerSettings(BaseSettings):
     dynamodb_table: str = Field(..., description="DynamoDB table name for URL states")
     sqs_crawl_queue_url: str = Field(..., description="SQS queue URL for crawl tasks")
     sqs_discovery_queue_url: Optional[str] = Field(None, description="SQS queue URL for domain discovery")
+    sqs_indexing_queue_url: Optional[str] = Field(None, description="SQS queue URL for indexing tasks")
     s3_raw_bucket: str = Field(..., description="S3 bucket for raw HTML content")
+    s3_parsed_bucket: Optional[str] = Field(None, description="S3 bucket for parsed content (for indexing)")
 
     # Redis Configuration
     redis_url: Optional[str] = Field(None, description="Redis connection URL (None to disable)")
@@ -103,6 +107,25 @@ class CrawlerSettings(BaseSettings):
             raise ValueError(f"Invalid environment: {v}. Must be one of {valid_envs}")
         return v
 
+    @field_validator("domain_qps_overrides", mode="before")
+    @classmethod
+    def validate_domain_qps_overrides(cls, v: Union[str, dict, None]) -> Dict[str, int]:
+        """Parse domain QPS overrides from JSON string or return dict"""
+        if v is None or v == "":
+            return {}
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, dict):
+                    return parsed
+                else:
+                    raise ValueError("JSON must be an object/dictionary")
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON string for domain_qps_overrides: {e}")
+        raise ValueError(f"domain_qps_overrides must be a dict or JSON string, got {type(v)}")
+
     @model_validator(mode="after")
     def validate_aws_config(self) -> "CrawlerSettings":
         """Validate AWS configuration based on environment"""
@@ -111,9 +134,13 @@ class CrawlerSettings(BaseSettings):
             if not self.localstack_endpoint:
                 raise ValueError("localstack_endpoint is required for devlocal environment")
         elif self.environment in ["staging", "prod"]:
-            # Production environments - require proper AWS credentials
-            if not self.aws_access_key_id and not os.getenv("AWS_ACCESS_KEY_ID"):
-                raise ValueError(f"AWS credentials required for {self.environment} environment")
+            # Production environments - require proper AWS credentials or IRSA
+            aws_access_key = self.aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID")
+            aws_role_arn = os.getenv("AWS_ROLE_ARN")
+            if not aws_access_key and not aws_role_arn:
+                raise ValueError(
+                    f"AWS credentials (access key or IAM role) required for {self.environment} environment"
+                )
 
         return self
 
@@ -125,7 +152,9 @@ class CrawlerSettings(BaseSettings):
             dynamodb_table=self.dynamodb_table,
             sqs_crawl_queue_url=self.sqs_crawl_queue_url,
             sqs_discovery_queue_url=self.sqs_discovery_queue_url,
+            sqs_indexing_queue_url=self.sqs_indexing_queue_url,
             s3_raw_bucket=self.s3_raw_bucket,
+            s3_parsed_bucket=self.s3_parsed_bucket,
             redis_url=self.redis_url,
             max_concurrent_requests=self.max_concurrent_requests,
             request_timeout=self.request_timeout,
@@ -143,15 +172,36 @@ class CrawlerSettings(BaseSettings):
         )
 
 
+def _expand_env_variables(obj: Any) -> Any:
+    """Recursively expand environment variables in configuration values."""
+    if isinstance(obj, str):
+        # Match ${VAR_NAME} or ${VAR_NAME:default_value} patterns
+        def replace_env_var(match):
+            var_with_default = match.group(1)
+            if ":" in var_with_default:
+                var_name, default_value = var_with_default.split(":", 1)
+                return os.getenv(var_name, default_value)
+            else:
+                return os.getenv(var_with_default, match.group(0))  # Return original if not found
+
+        return re.sub(r"\$\{([^}]+)\}", replace_env_var, obj)
+    elif isinstance(obj, dict):
+        return {key: _expand_env_variables(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [_expand_env_variables(item) for item in obj]
+    else:
+        return obj
+
+
 def load_config_from_yaml(file_path: Path) -> Dict[str, Any]:
     """
-    Load configuration from YAML file.
+    Load configuration from YAML file with environment variable expansion.
 
     Args:
         file_path: Path to YAML configuration file
 
     Returns:
-        Dictionary containing configuration values
+        Dictionary containing configuration values with env vars expanded
 
     Raises:
         FileNotFoundError: If configuration file doesn't exist
@@ -161,7 +211,8 @@ def load_config_from_yaml(file_path: Path) -> Dict[str, Any]:
         raise FileNotFoundError(f"Configuration file not found: {file_path}")
 
     with open(file_path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+        config = yaml.safe_load(f) or {}
+        return _expand_env_variables(config)
 
 
 def get_config_file_path(environment: str) -> Path:
