@@ -11,21 +11,21 @@ locals {
   }
 }
 
-# KMS key for EKS cluster encryption
-resource "aws_kms_key" "eks" {
-  description             = "EKS Secret Encryption Key for ${local.cluster_name}"
-  deletion_window_in_days = 7
-  enable_key_rotation     = true
-
-  tags = merge(local.common_tags, {
-    Name = "${local.cluster_name}-eks-encryption-key"
-  })
-}
-
-resource "aws_kms_alias" "eks" {
-  name          = "alias/${local.cluster_name}-eks"
-  target_key_id = aws_kms_key.eks.key_id
-}
+# KMS key for EKS cluster encryption (disabled to avoid permission issues)
+# resource "aws_kms_key" "eks" {
+#   description             = "EKS Secret Encryption Key for ${local.cluster_name}"
+#   deletion_window_in_days = 7
+#   enable_key_rotation     = true
+#
+#   tags = merge(local.common_tags, {
+#     Name = "${local.cluster_name}-eks-encryption-key"
+#   })
+# }
+#
+# resource "aws_kms_alias" "eks" {
+#   name          = "alias/${local.cluster_name}-eks"
+#   target_key_id = aws_kms_key.eks.key_id
+# }
 
 # EKS Cluster
 resource "aws_eks_cluster" "main" {
@@ -41,12 +41,12 @@ resource "aws_eks_cluster" "main" {
     security_group_ids      = [aws_security_group.eks_cluster.id]
   }
 
-  encryption_config {
-    provider {
-      key_arn = aws_kms_key.eks.arn
-    }
-    resources = ["secrets"]
-  }
+  # encryption_config {
+  #   provider {
+  #     key_arn = aws_kms_key.eks.arn
+  #   }
+  #   resources = ["secrets"]
+  # }  # Disabled to avoid KMS permission issues
 
   # Enable logging
   enabled_cluster_log_types = [
@@ -68,11 +68,11 @@ resource "aws_eks_cluster" "main" {
   })
 }
 
-# CloudWatch log group for EKS cluster logs
+# CloudWatch log group for EKS cluster logs (without KMS encryption)
 resource "aws_cloudwatch_log_group" "eks" {
   name              = "/aws/eks/${local.cluster_name}/cluster"
   retention_in_days = var.log_retention_days
-  kms_key_id        = aws_kms_key.eks.arn
+  # kms_key_id        = aws_kms_key.eks.arn  # Disabled to avoid KMS permission issues
 
   tags = local.common_tags
 }
@@ -87,7 +87,7 @@ resource "aws_eks_node_group" "crawler_nodes" {
   instance_types = var.node_instance_types
   ami_type       = "AL2_x86_64"
   capacity_type  = var.capacity_type
-  disk_size      = var.node_disk_size
+  # disk_size removed - using launch template instead
 
   # Scaling configuration optimized for crawler workloads
   scaling_config {
@@ -143,18 +143,27 @@ resource "aws_launch_template" "eks_nodes" {
 
   vpc_security_group_ids = [aws_security_group.eks_nodes.id]
 
-  # User data for EKS node bootstrap
-  user_data = base64encode(templatefile("${path.module}/user-data.sh", {
-    cluster_name = local.cluster_name
-    endpoint     = aws_eks_cluster.main.endpoint
-    ca_data      = aws_eks_cluster.main.certificate_authority[0].data
-  }))
+  # No user data - use default EKS AMI bootstrap
+  # user_data = base64encode(templatefile("${path.module}/user-data-simple.sh", {
+  #   cluster_name = local.cluster_name
+  # }))
 
   # Instance metadata service v2 only
   metadata_options {
     http_endpoint               = "enabled"
     http_tokens                 = "required"
-    http_put_response_hop_limit = 2
+    http_put_response_hop_limit = 3  # Required for VPC CNI IPAM daemon to access metadata from pods
+  }
+
+  # Block device mapping for EBS volume
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      volume_size           = 20
+      volume_type          = "gp3"
+      delete_on_termination = true
+      encrypted            = true
+    }
   }
 
   # Monitoring
@@ -189,6 +198,7 @@ resource "aws_iam_openid_connect_provider" "eks" {
 
 # EKS cluster add-ons
 resource "aws_eks_addon" "vpc_cni" {
+  count                       = var.use_self_managed_cni ? 0 : 1
   cluster_name                = aws_eks_cluster.main.name
   addon_name                  = "vpc-cni"
   addon_version               = var.vpc_cni_version

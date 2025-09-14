@@ -71,7 +71,7 @@ def initialize_pynamodb_for_localstack(settings: CrawlerSettings) -> None:
             from pynamodb.connection import Connection
 
             # Store original client creation (not used but kept for potential restoration)
-            original_get_client = getattr(Connection, "_get_client", None)  # type: ignore
+            getattr(Connection, "_get_client", None)  # type: ignore
 
             def localstack_get_client(self: Any, _operation_name: Any = None) -> Any:
                 """Create DynamoDB client with LocalStack endpoint"""

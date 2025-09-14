@@ -19,7 +19,7 @@ import textwrap
 from typing import Dict, List, Optional
 
 # --- Defaults ---
-DEFAULT_REGION = "ap-northeast-1"
+DEFAULT_REGION = "us-east-1"
 
 
 # --- Internal helpers ---

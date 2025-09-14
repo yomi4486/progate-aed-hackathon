@@ -287,7 +287,8 @@ class PipelineClient:
             if message_attributes:
                 params["MessageAttributes"] = message_attributes  # type: ignore
 
-            if message_group_id:
+            # Only add FIFO-specific parameters if queue is FIFO
+            if message_group_id and queue_url.endswith(".fifo"):
                 params["MessageGroupId"] = message_group_id
                 # Add deduplication ID to prevent duplicates
                 params["MessageDeduplicationId"] = generate_url_hash(message_body + str(datetime.now(timezone.utc)))

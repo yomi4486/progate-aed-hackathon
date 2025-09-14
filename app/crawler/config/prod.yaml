@@ -2,16 +2,16 @@
 environment: "prod"
 
 # AWS Configuration (credentials from IAM role)
-aws_region: "ap-northeast-1"
+aws_region: "us-east-1"
 
 # AWS Resources (production) - set via environment variables
-dynamodb_table: "${DYNAMODB_TABLE:aedhack-prod-url-states}"
-sqs_crawl_queue_url: "${SQS_CRAWL_QUEUE_URL}"
-sqs_discovery_queue_url: "${SQS_DISCOVERY_QUEUE_URL}"
-s3_raw_bucket: "${S3_RAW_BUCKET}"
+dynamodb_table: "${CRAWLER_DYNAMODB_TABLE:aedhack-prod-url-states}"
+sqs_crawl_queue_url: "${CRAWLER_SQS_CRAWL_QUEUE_URL}"
+sqs_discovery_queue_url: "${CRAWLER_SQS_DISCOVERY_QUEUE_URL}"
+s3_raw_bucket: "${CRAWLER_S3_RAW_BUCKET}"
 
 # Redis (ElastiCache cluster) - set via environment variables
-redis_url: "${REDIS_URL}"
+redis_url: "${CRAWLER_REDIS_URL}"
 
 # Crawler Configuration (production-optimized)
 max_concurrent_requests: 15

@@ -84,6 +84,50 @@ def extract_router_info(module: ModuleType) -> List[Dict[str, Any]]:
     return routers
 
 
+def _is_dependency_param(param: inspect.Parameter) -> bool:
+    """Check if a parameter is a FastAPI dependency injection parameter."""
+    # Check if parameter has Depends() default
+    if hasattr(param.default, "__class__"):
+        class_name = param.default.__class__.__name__
+        if class_name == "Depends":
+            return True
+
+    # Check annotation for common dependency types
+    if param.annotation != inspect.Parameter.empty:
+        annotation_str = str(param.annotation)
+        # Common patterns for dependency injection
+        dependency_patterns = ["Depends(", "Annotated[", "Session", "Database", "Connection"]
+        if any(pattern in annotation_str for pattern in dependency_patterns):
+            return True
+
+    return False
+
+
+def _is_optional_param(param: inspect.Parameter) -> bool:
+    """Check if a FastAPI parameter is optional."""
+    # If parameter has no default, it's required
+    if param.default == inspect.Parameter.empty:
+        return False
+
+    # Check for FastAPI Query, Path, Body, etc.
+    if hasattr(param.default, "__class__"):
+        default_class_name = param.default.__class__.__name__
+
+        # FastAPI Query/Path/Body parameters
+        if default_class_name in ["Query", "Path", "Body", "Form", "File"]:
+            # Check if it's Query(...) which means required
+            if hasattr(param.default, "default"):
+                # Query(...) has default=Ellipsis (...), meaning required
+                if param.default.default is ...:
+                    return False
+                # Query(None) or Query(some_value) means optional
+                else:
+                    return True
+
+    # Regular default value means optional
+    return True
+
+
 def analyze_route(route: BaseRoute) -> Optional[Dict[str, Any]]:
     """Analyze a single FastAPI route"""
     from fastapi.routing import APIRoute
@@ -117,11 +161,22 @@ def analyze_route(route: BaseRoute) -> Optional[Dict[str, Any]]:
     # Extract parameter information
     params: List[Dict[str, Any]] = []
     for param_name, param in sig.parameters.items():
-        if param_name in ["request", "response"]:  # Skip FastAPI injected params
+        # Skip FastAPI injected params
+        if param_name in ["request", "response"]:
+            continue
+
+        # Skip dependency injection parameters
+        if _is_dependency_param(param):
+            continue
+
+        # Skip common dependency parameter names
+        if param_name in ["db", "session", "service", "client", "connection", "current_user"]:
             continue
 
         param_type = type_conv(param.annotation) if param.annotation != inspect.Parameter.empty else "unknown"
-        is_optional = param.default != inspect.Parameter.empty
+
+        # Check if parameter is optional
+        is_optional = _is_optional_param(param)
 
         params.append(
             {
@@ -344,18 +399,30 @@ def process_router_file(file_path: str, output_file: str) -> None:
         # Derive import path based on output file location
         types_import_path = derive_types_import_path(output_file)
 
-        # Add import statement at the top
-        imports = f"import type {{ ErrorResponse }} from '{types_import_path}/common';"
-
         # Collect all unique return types for imports
         return_types: set[str] = set()
         for route in all_routes:
             if route and route["return_type"] != "unknown":
                 return_types.add(route["return_type"])
 
-        if return_types:
-            type_imports = ", ".join(sorted(return_types))
-            imports += f"\nimport type {{ {type_imports} }} from '{types_import_path}/search';"
+        # Separate common types from search types
+        common_types = {"ErrorResponse", "HealthStatus"}
+        search_types = return_types - common_types
+
+        # Generate imports
+        imports = ""
+
+        # Always include ErrorResponse, and HealthStatus if present
+        common_imports = {"ErrorResponse"}
+        if "HealthStatus" in return_types:
+            common_imports.add("HealthStatus")
+
+        imports += f"import type {{ {', '.join(sorted(common_imports))} }} from '{types_import_path}/common';"
+
+        # Add search imports if any
+        if search_types:
+            search_type_imports = ", ".join(sorted(search_types))
+            imports += f"\nimport type {{ {search_type_imports} }} from '{types_import_path}/search';"
 
         final_code = imports + "\n\n" + client_code
 

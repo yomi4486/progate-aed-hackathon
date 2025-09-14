@@ -67,7 +67,7 @@ aws configure
 # または環境変数で設定
 export AWS_ACCESS_KEY_ID="your-access-key"
 export AWS_SECRET_ACCESS_KEY="your-secret-key"  
-export AWS_DEFAULT_REGION="ap-northeast-1"
+export AWS_DEFAULT_REGION="us-east-1"
 ```
 
 ## デプロイメント手順
@@ -81,10 +81,10 @@ export AWS_DEFAULT_REGION="ap-northeast-1"
 ./scripts/deploy-to-eks.sh
 
 # カスタムパラメータでデプロイ
-./scripts/deploy-to-eks.sh my-cluster prod ap-northeast-1
+./scripts/deploy-to-eks.sh my-cluster prod us-east-1
 
 # ECRリポジトリを指定してイメージビルド＋デプロイ
-./scripts/deploy-to-eks.sh my-cluster prod ap-northeast-1 123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/crawler v1.0.0
+./scripts/deploy-to-eks.sh my-cluster prod us-east-1 123456789012.dkr.ecr.us-east-1.amazonaws.com/crawler v1.0.0
 ```
 
 ### 2. 段階的デプロイ
@@ -110,7 +110,7 @@ terraform apply -var="use_localstack=false" -var="env=prod"
 
 ```bash
 # kubeconfigの更新
-aws eks update-kubeconfig --region ap-northeast-1 --name aedhack-prod-cluster
+aws eks update-kubeconfig --region us-east-1 --name aedhack-prod-cluster
 
 # 接続確認
 kubectl cluster-info
@@ -120,7 +120,7 @@ kubectl get nodes
 #### Step 3: KEDAのインストール
 
 ```bash
-./scripts/install-keda.sh aedhack-prod-cluster ap-northeast-1
+./scripts/install-keda.sh aedhack-prod-cluster us-east-1
 ```
 
 #### Step 4: Kubernetesマニフェストの更新

@@ -2,13 +2,15 @@
 environment: "dev"
 
 # AWS Configuration (will be provided via environment variables or AWS credentials)
-aws_region: "ap-northeast-1"
+aws_region: "us-east-1"
 
 # AWS Resources (development/LocalStack)
 dynamodb_table: "crawler-dev-url-states"
-sqs_crawl_queue_url: "https://sqs.ap-northeast-1.amazonaws.com/123456789012/crawler-dev-crawl-queue"
-sqs_discovery_queue_url: "https://sqs.ap-northeast-1.amazonaws.com/123456789012/crawler-dev-discovery-queue"
+sqs_crawl_queue_url: "https://sqs.us-east-1.amazonaws.com/123456789012/crawler-dev-crawl-queue"
+sqs_discovery_queue_url: "https://sqs.us-east-1.amazonaws.com/123456789012/crawler-dev-discovery-queue"
+sqs_indexing_queue_url: "https://sqs.us-east-1.amazonaws.com/123456789012/indexer-dev-indexing-queue"
 s3_raw_bucket: "crawler-dev-raw-content"
+s3_parsed_bucket: "crawler-dev-parsed-content"
 redis_url: "redis://localhost:6379/0"
 
 # Crawler Configuration

@@ -147,7 +147,7 @@
   class URLStateModel(Model):
       class Meta:
           table_name = "url-states"
-          region = "ap-northeast-1"
+          region = "us-east-1"
 
       url_hash = UnicodeAttribute(hash_key=True)
       url = UnicodeAttribute()

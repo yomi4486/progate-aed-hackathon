@@ -9,7 +9,7 @@ data:
   LOG_LEVEL: "INFO"
   
   # AWS Configuration
-  AWS_REGION: "ap-northeast-1"
+  AWS_REGION: "us-east-1"
   
   # Crawler Settings
   MAX_CONCURRENT_REQUESTS: "10"
@@ -18,6 +18,7 @@ data:
   
   # Rate Limiting
   DEFAULT_QPS_PER_DOMAIN: "1"
+  DOMAIN_QPS_OVERRIDES: "{}"
   
   # Retry Configuration
   MAX_RETRIES: "3"

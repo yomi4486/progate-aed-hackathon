@@ -4,7 +4,7 @@ set -euo pipefail
 # Complete EKS deployment script for crawler workloads
 CLUSTER_NAME=${1:-"aedhack-dev-cluster"}
 ENVIRONMENT=${2:-"dev"}
-AWS_REGION=${3:-"ap-northeast-1"}
+AWS_REGION=${3:-"us-east-1"}
 ECR_REPOSITORY=${4:-""}
 IMAGE_TAG=${5:-"latest"}
 

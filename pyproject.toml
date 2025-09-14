@@ -13,12 +13,14 @@ dependencies = [
     "fastapi[standard]>=0.116.1",
     "langdetect>=1.0.9",
     "lxml>=6.0.1",
+    "mecab-python3>=1.0.10",
     "pydantic>=2.11.7",
     "pydantic-settings>=2.10.1",
     "pynamodb>=6.1.0",
     "pyyaml>=6.0.2",
     "redis>=6.4.0",
     "structlog>=25.4.0",
+    "unidic-lite>=1.0.8",
     "uvicorn>=0.35.0",
     "xxhash>=3.5.0",
 ]
@@ -26,7 +28,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "aioresponses>=0.7.8",
-    "boto3-stubs[dynamodb,essential]>=1.40.26",
+    "boto3-stubs[bedrock-runtime,dynamodb,essential]>=1.40.26",
     "progate-aed-hackathon",
     "pyright>=1.1.405",
     "pytest>=8.4.2",
@@ -63,3 +65,5 @@ progate-aed-hackathon = { workspace = true }
 pydantic2ts = "tools.pydantic2ts.__main__:main"
 migrate = "tools.migrate.__main__:main"
 routes2rpcc = "tools.routes2rpcc.__main__:main"
+indexer = "app.indexer.cli:main"
+crawler = "app.crawler.worker:main"

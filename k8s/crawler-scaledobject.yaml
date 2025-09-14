@@ -1,0 +1,56 @@
+# TriggerAuthentication for AWS credentials (using IRSA)
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: aws-credentials
+  namespace: default
+spec:
+  podIdentity:
+    provider: aws-eks
+
+---
+# ScaledObject for crawler deployment based on SQS queue depth
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: crawler-worker-scaler
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: crawler-worker
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  pollingInterval: 30
+  cooldownPeriod: 300
+  triggers:
+  # Primary trigger: SQS crawl queue depth
+  - type: aws-sqs-queue
+    authenticationRef:
+      name: aws-credentials
+    metadata:
+      queueURL: "https://sqs.us-east-1.amazonaws.com/978888632917/aedhack-prod-url"
+      queueLength: "5"  # Scale when queue has 5+ messages
+      awsRegion: "us-east-1"
+      identityOwner: pod
+
+  # Scaling configuration
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 60
+          policies:
+          - type: Percent
+            value: 100
+            periodSeconds: 60
+          - type: Pods
+            value: 2
+            periodSeconds: 60
+          selectPolicy: Max
+        scaleDown:
+          stabilizationWindowSeconds: 300
+          policies:
+          - type: Percent
+            value: 50
+            periodSeconds: 60
+          selectPolicy: Min
