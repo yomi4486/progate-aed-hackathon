@@ -9,6 +9,8 @@ import SwiftUI
 import WebKit
 import UIKit
 
+
+
 struct ContentView: View {
     private let baseUrl: String = Bundle.main.object(forInfoDictionaryKey: "BaseWebUrl") as? String ?? "https://main.deat62vf60g8n.amplifyapp.com"
     @State private var tabs: [WebTab] = []
@@ -18,6 +20,8 @@ struct ContentView: View {
     @State private var showTabOverview: Bool = false
     @Environment(\.colorScheme) var colorScheme
 
+
+
     init() {
         // 初期タブをセット
         let url = URL(string: Bundle.main.object(forInfoDictionaryKey: "BaseWebUrl") as? String ?? "https://main.deat62vf60g8n.amplifyapp.com")!
@@ -26,7 +30,7 @@ struct ContentView: View {
     }
 
     var body: some View {
-        GeometryReader { geo in
+        return GeometryReader { geo in
             ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
                     // AppBar
@@ -64,8 +68,10 @@ struct ContentView: View {
                     ZStack {
                         if let tab = tabs.first(where: { $0.id == selectedTabId }) {
                             WebTabView(tab: tab)
+                                .id(tab.id)
                         } else if let firstTab = tabs.first {
                             WebTabView(tab: firstTab)
+                                .id(firstTab.id)
                         } else {
                             Text("No tabs open")
                         }
@@ -206,6 +212,7 @@ struct ContentView: View {
                 urlInput = first.url.absoluteString
             }
         }
+
     }
     private var canGoBack: Bool {
         if let tab = tabs.first(where: { $0.id == selectedTabId }) {

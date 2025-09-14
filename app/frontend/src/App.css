@@ -25,9 +25,14 @@
   top: 0;
   left: 0;
   width: 100%;
+  max-width: 100vw;
+  margin: 0 auto;
   z-index: 100;
-  background: var(--color-bg);
+  background: var(--color-bg-translucent, rgba(255,255,255,0.85));
   box-shadow: 0 2px 8px var(--color-shadow);
+  border-radius: 8px 8px 8px 8px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 body {
@@ -265,6 +270,7 @@ body {
 
 :root {
   --center-abs-margin: calc((100vw - 700px) / 6);
+  --color-bg-translucent: rgba(255,255,255,0.85);
   /* Light mode colors */
   --color-bg: #fff;
   --color-bg-alt: #f8f9fa;
@@ -298,6 +304,7 @@ body {
     --color-border: #3c4043;
     --color-shadow: rgba(15,140,200,0.18);
     --color-header-border: #3c4043;
+    --color-bg-translucent: rgba(24,26,27,0.85);
   }
 }
 
