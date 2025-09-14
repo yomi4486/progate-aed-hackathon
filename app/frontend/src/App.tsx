@@ -29,7 +29,7 @@ function App() {
   // GeoJSONデータをfetchで取得
   const [geojsonData, setGeojsonData] = useState<any>(null);
   useEffect(() => {
-    fetch('/src/assets/03_chihoukaijyouyohouku_kaiikipolygon.geojson')
+    fetch('https://www.geospatial.jp/ckan/dataset/9f9f90bb-c3be-4cd5-93ea-c8df94abc1cc/resource/5a5b4a81-cb4f-4c7d-9f54-a2e571ef9dae/download/03_chihoukaijyouyohouku_kaiikipolygon.geojson')
       .then(res => res.json())
       .then(setGeojsonData)
       .catch(() => setGeojsonData(null));
