@@ -125,14 +125,14 @@ class OpenSearchClient:
             bulk_url = urljoin(self.base_url, "_bulk")
 
             # Prepare bulk request body
-            bulk_body = []
+            bulk_body: List[str] = []
             for doc in documents:
                 # Index operation
                 bulk_body.append(json.dumps({"index": {"_index": self.index_name, "_id": doc.document_id}}))
                 # Document content
                 bulk_body.append(json.dumps(doc.to_opensearch_document()))
 
-            bulk_data = "\\n".join(bulk_body) + "\\n"
+            bulk_data = "\n".join(bulk_body) + "\n"
 
             headers = {"Content-Type": "application/json"}
             async with session.post(bulk_url, data=bulk_data, headers=headers) as response:
@@ -202,16 +202,16 @@ class OpenSearchClient:
                         "search_analyzer": "japanese_analyzer",
                         "fields": {
                             "keyword": {"type": "keyword", "ignore_above": 256},
-                            "standard": {"type": "text", "analyzer": "standard"}  # Fallback for non-Japanese
+                            "standard": {"type": "text", "analyzer": "standard"},  # Fallback for non-Japanese
                         },
                     },
                     "content": {
-                        "type": "text", 
+                        "type": "text",
                         "analyzer": "japanese_analyzer",
                         "search_analyzer": "japanese_analyzer",
                         "fields": {
                             "standard": {"type": "text", "analyzer": "standard"}  # Fallback for non-Japanese
-                        }
+                        },
                     },
                     "content_type": {"type": "keyword"},
                     "language": {"type": "keyword"},
@@ -221,13 +221,13 @@ class OpenSearchClient:
                     "processing_priority": {"type": "integer"},
                     "status_code": {"type": "integer"},
                     "keywords": {
-                        "type": "text", 
+                        "type": "text",
                         "analyzer": "japanese_analyzer",
                         "search_analyzer": "japanese_analyzer",
                         "fields": {
                             "keyword": {"type": "keyword"},
-                            "standard": {"type": "text", "analyzer": "standard"}
-                        }
+                            "standard": {"type": "text", "analyzer": "standard"},
+                        },
                     },
                     "categories": {"type": "keyword"},
                     "embedding": {
@@ -255,16 +255,11 @@ class OpenSearchClient:
                                 "kuromoji_part_of_speech",
                                 "cjk_width",
                                 "lowercase",
-                                "kuromoji_stemmer"
+                                "kuromoji_stemmer",
                             ],
                         }
                     },
-                    "tokenizer": {
-                        "kuromoji_tokenizer": {
-                            "type": "kuromoji_tokenizer",
-                            "mode": "search"
-                        }
-                    }
+                    "tokenizer": {"kuromoji_tokenizer": {"type": "kuromoji_tokenizer", "mode": "search"}},
                 },
             },
         }
@@ -275,7 +270,7 @@ class OpenSearchClient:
         failed_count = 0
 
         for item in response.get("items", []):
-            for operation, result in item.items():
+            for _, result in item.items():
                 if result.get("status", 500) in [200, 201]:
                     success_count += 1
                 else:

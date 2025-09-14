@@ -8,6 +8,8 @@ with proper mappings for hybrid BM25+vector search as specified in design.md.
 import logging
 from typing import Any, Dict
 
+from .opensearch_client import OpenSearchClient
+
 logger = logging.getLogger(__name__)
 
 
@@ -186,7 +188,7 @@ def get_default_index_name(environment: str = "dev") -> str:
 
 
 async def create_index_with_template(
-    opensearch_client, environment: str = "dev", embedding_dimension: int = 1536
+    opensearch_client: OpenSearchClient, environment: str = "dev", embedding_dimension: int = 1536
 ) -> bool:
     """
     Create index template and initial index for environment.

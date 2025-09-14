@@ -9,7 +9,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Match, Optional, Union
 
 import yaml
 from pydantic import Field, field_validator, model_validator
@@ -109,21 +109,20 @@ class CrawlerSettings(BaseSettings):
 
     @field_validator("domain_qps_overrides", mode="before")
     @classmethod
-    def validate_domain_qps_overrides(cls, v: Union[str, dict, None]) -> Dict[str, int]:
+    def validate_domain_qps_overrides(cls, v: Union[str, Dict[str, Any], None]) -> Dict[str, int]:
         """Parse domain QPS overrides from JSON string or return dict"""
         if v is None or v == "":
             return {}
         if isinstance(v, dict):
             return v
-        if isinstance(v, str):
-            try:
-                parsed = json.loads(v)
-                if isinstance(parsed, dict):
-                    return parsed
-                else:
-                    raise ValueError("JSON must be an object/dictionary")
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid JSON string for domain_qps_overrides: {e}")
+        try:
+            parsed = json.loads(v)
+            if isinstance(parsed, dict):
+                return parsed  # type: ignore
+            else:
+                raise ValueError("JSON must be an object/dictionary")
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON string for domain_qps_overrides: {e}")
         raise ValueError(f"domain_qps_overrides must be a dict or JSON string, got {type(v)}")
 
     @model_validator(mode="after")
@@ -172,12 +171,12 @@ class CrawlerSettings(BaseSettings):
         )
 
 
-def _expand_env_variables(obj: Any) -> Any:
+def _expand_env_variables(obj: Union[str, Dict[str, Any], list[str]]) -> Any:
     """Recursively expand environment variables in configuration values."""
     if isinstance(obj, str):
         # Match ${VAR_NAME} or ${VAR_NAME:default_value} patterns
-        def replace_env_var(match):
-            var_with_default = match.group(1)
+        def replace_env_var(match: Match[str]) -> str:
+            var_with_default: str = match.group(1)
             if ":" in var_with_default:
                 var_name, default_value = var_with_default.split(":", 1)
                 return os.getenv(var_name, default_value)
@@ -187,7 +186,7 @@ def _expand_env_variables(obj: Any) -> Any:
         return re.sub(r"\$\{([^}]+)\}", replace_env_var, obj)
     elif isinstance(obj, dict):
         return {key: _expand_env_variables(value) for key, value in obj.items()}
-    elif isinstance(obj, list):
+    elif isinstance(obj, list):  # type: ignore
         return [_expand_env_variables(item) for item in obj]
     else:
         return obj
@@ -211,7 +210,7 @@ def load_config_from_yaml(file_path: Path) -> Dict[str, Any]:
         raise FileNotFoundError(f"Configuration file not found: {file_path}")
 
     with open(file_path, "r", encoding="utf-8") as f:
-        config = yaml.safe_load(f) or {}
+        config: Dict[str, Any] = yaml.safe_load(f) or {}
         return _expand_env_variables(config)
 
 

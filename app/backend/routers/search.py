@@ -3,7 +3,7 @@ Search API router using existing schema.
 """
 
 import logging
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 _search_service: Optional[SearchService] = None
 
 # Create FastAPI router
-router = APIRouter(prefix="/search", tags=["search"])
+router = APIRouter(tags=["search"])
 
 
 def get_search_service() -> SearchService:
@@ -28,9 +28,9 @@ def get_search_service() -> SearchService:
     return _search_service
 
 
-@router.get("/", response_model=SearchResponse)
+@router.get("/search", response_model=SearchResponse)
 async def search(
-    q: str = Query(..., description="Search query", min_length=1, max_length=500),
+    query: str = Query(..., description="Search query", min_length=1, max_length=500, alias="q"),
     page: int = Query(1, description="Page number", ge=1),
     size: int = Query(10, description="Results per page", ge=1, le=100),
     lang: Optional[Lang] = Query(None, description="Filter by language"),
@@ -50,11 +50,15 @@ async def search(
     try:
         # Create search query using existing schema
         # Cast sort to proper literal type
-        valid_sort = None
-        if sort and sort in ["_score", "published_at", "popularity_score"]:
-            valid_sort = sort
+        valid_sort: Optional[Literal["_score", "published_at", "popularity_score"]] = None
+        if sort == "_score":
+            valid_sort = "_score"
+        elif sort == "published_at":
+            valid_sort = "published_at"
+        elif sort == "popularity_score":
+            valid_sort = "popularity_score"
 
-        search_query = SearchQuery(q=q, page=page, size=size, lang=lang, site=site, sort=valid_sort)
+        search_query = SearchQuery(q=query, page=page, size=size, lang=lang, site=site, sort=valid_sort)
 
         # Execute search
         response = await service.search(search_query)
@@ -62,7 +66,7 @@ async def search(
         return response
 
     except Exception as e:
-        logger.error(f"Search failed for query '{q}': {e}")
+        logger.error(f"Search failed for query '{query}': {e}")
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 

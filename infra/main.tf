@@ -1,6 +1,7 @@
 locals {
-  project = "aedhack"
-  env     = var.use_localstack ? "devlocal" : (var.env != null ? var.env : "dev")
+  project           = "aedhack"
+  env              = var.use_localstack ? "devlocal" : (var.env != null ? var.env : "dev")
+  timestamp_suffix = formatdate("YYYY-MM-DD-hhmm", timestamp())
 }
 
 variable "env" {
@@ -29,30 +30,30 @@ variable "localstack_endpoint" {
 
 module "network" {
   source         = "./modules/network"
-  name           = "${local.project}-${local.env}"
+  name           = "${local.project}-${local.env}-${local.timestamp_suffix}"
   use_localstack = var.use_localstack
 }
 
 module "storage" {
   source         = "./modules/storage"
-  name_prefix    = "${local.project}-${local.env}"
+  name_prefix    = "${local.project}-${local.env}-${local.timestamp_suffix}"
   use_localstack = var.use_localstack
 }
 
 module "queue" {
   source      = "./modules/queue"
-  name_prefix = "${local.project}-${local.env}"
+  name_prefix = "${local.project}-${local.env}-${local.timestamp_suffix}"
 }
 
 module "ddb" {
   source     = "./modules/ddb"
-  table_name = "${local.project}-${local.env}-url-states"
+  table_name = "${local.project}-${local.env}-url-states-${local.timestamp_suffix}"
 }
 
 module "opensearch" {
   count         = var.use_localstack ? 0 : 1
   source        = "./modules/opensearch"
-  domain_name   = "${local.project}-${local.env}-search"
+  domain_name   = "${local.project}-${local.env}-search-${local.timestamp_suffix}"
   environment   = local.env
   vpc_id        = module.network.vpc_id
   subnet_ids    = [module.network.private_subnet_ids[0]]  # Single subnet for single-node deployment
@@ -67,7 +68,7 @@ module "opensearch" {
 module "eks" {
   count        = var.use_localstack ? 0 : 1
   source       = "./modules/eks"
-  cluster_name = "${local.project}-${local.env}-cluster"
+  cluster_name = "${local.project}-${local.env}-cluster-${local.timestamp_suffix}"
   environment  = local.env
   project      = local.project
 

@@ -11,7 +11,7 @@ import sys
 
 from .config import OpenSearchConfig
 from .index_templates import create_index_with_template
-from .opensearch_client import OpenSearchClient
+from .opensearch_client import OpenSearchClient, ProcessedDocument
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,8 @@ async def verify_opensearch_setup(opensearch_config: OpenSearchConfig, environme
 
         # Index a sample document
         doc_id = "test-doc-001"
-        success = await client.index_document({**SAMPLE_DOCUMENT, "id": doc_id})
+        document = ProcessedDocument(**SAMPLE_DOCUMENT, id=doc_id)  # type: ignore
+        success = await client.index_document(document)
 
         if not success:
             logger.error("Failed to index test document")

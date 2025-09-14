@@ -21,9 +21,9 @@ def setup_logging(log_level: str, json_logs: bool = False):
         import json
 
         class JSONFormatter(logging.Formatter):
-            def format(self, record):
+            def format(self, record: logging.LogRecord) -> str:
                 log_obj = {
-                    "timestamp": datetime.datetime.utcnow().isoformat(),
+                    "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                     "level": record.levelname,
                     "logger": record.name,
                     "message": record.getMessage(),
@@ -59,7 +59,7 @@ async def health_check(config: IndexerConfig) -> bool:
     try:
         import boto3
 
-        sqs = boto3.client("sqs", region_name=config.aws_region)
+        sqs = boto3.client("sqs", region_name=config.aws_region)  # type: ignore
         sqs.get_queue_attributes(QueueUrl=config.sqs_indexing_queue_url)
         print("✅ SQS queue accessible")
     except Exception as e:
@@ -70,7 +70,7 @@ async def health_check(config: IndexerConfig) -> bool:
     try:
         import boto3
 
-        s3 = boto3.client("s3", region_name=config.aws_region)
+        s3 = boto3.client("s3", region_name=config.aws_region)  # type: ignore
         s3.head_bucket(Bucket=config.s3_parsed_bucket)
         print("✅ S3 bucket accessible")
     except Exception as e:

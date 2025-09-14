@@ -4,7 +4,7 @@ Main search service implementing hybrid BM25 + vector search.
 
 import asyncio
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from ..indexer.bedrock_client import BedrockClient
 from ..indexer.config import BedrockConfig, OpenSearchConfig
@@ -56,12 +56,12 @@ class SearchService:
                 response = await self._bm25_search(query, from_)
 
             # Process results to match existing SearchHit schema
-            hits = []
+            hits: List[SearchHit] = []
             for hit in response["hits"]["hits"]:
                 source = hit["_source"]
 
                 # Convert highlights to existing schema format
-                highlights_list = []
+                highlights_list: List[Highlight] = []
                 if "highlight" in hit:
                     for field, snippets in hit["highlight"].items():
                         highlights_list.append(Highlight(field=field, snippets=snippets))
@@ -95,11 +95,11 @@ class SearchService:
         """Execute BM25 search and return raw hits."""
         # Detect if query contains Japanese characters
         is_japanese_query = self._is_japanese_query(query.q)
-        
+
         # Choose appropriate fields based on language
         if is_japanese_query:
             title_field = "title"  # Uses japanese_analyzer
-            content_field = "content"  # Uses japanese_analyzer  
+            content_field = "content"  # Uses japanese_analyzer
             keywords_field = "keywords"  # Uses japanese_analyzer
             multi_match_fields = ["title^2", "content", "keywords"]
         else:
@@ -107,8 +107,8 @@ class SearchService:
             content_field = "content.standard"  # Uses standard analyzer
             keywords_field = "keywords.standard"  # Uses standard analyzer
             multi_match_fields = ["title.standard^2", "content.standard", "keywords.standard"]
-        
-        search_body = {
+
+        search_body: Dict[str, Any] = {
             "size": size,
             "query": {
                 "bool": {
@@ -129,27 +129,27 @@ class SearchService:
                     "minimum_should_match": 1,
                 }
             },
-            "highlight": {
-                "fields": {"title": {}, "content": {"fragment_size": 150, "number_of_fragments": 3}}
-            }
+            "highlight": {"fields": {"title": {}, "content": {"fragment_size": 150, "number_of_fragments": 3}}},
         }
 
         # Add filters
-        filters = []
+        filters: List[Dict[str, Any]] = []
         if query.lang:
             filters.append({"term": {"language": query.lang}})
         if query.site:
             filters.append({"term": {"domain": query.site}})
-        
+
         if filters:
             search_body["query"]["bool"]["filter"] = filters
 
         response = await self.opensearch_client.search_raw(search_body)
         return response["hits"]["hits"]
 
-    async def _execute_vector_search(self, query: SearchQuery, query_embedding: List[float], size: int) -> List[Dict[str, Any]]:
+    async def _execute_vector_search(
+        self, query: SearchQuery, query_embedding: List[float], size: int
+    ) -> List[Dict[str, Any]]:
         """Execute vector similarity search and return raw hits."""
-        search_body = {
+        search_body: Dict[str, Any] = {
             "size": size,
             "query": {
                 "knn": {
@@ -159,65 +159,68 @@ class SearchService:
                     }
                 }
             },
-            "highlight": {
-                "fields": {"title": {}, "content": {"fragment_size": 150, "number_of_fragments": 3}}
-            }
+            "highlight": {"fields": {"title": {}, "content": {"fragment_size": 150, "number_of_fragments": 3}}},
         }
 
         # Add filters
-        filters = []
+        filters: List[Dict[str, Any]] = []
         if query.lang:
             filters.append({"term": {"language": query.lang}})
         if query.site:
             filters.append({"term": {"domain": query.site}})
-        
+
         if filters:
             search_body["query"] = {"bool": {"must": [search_body["query"]], "filter": filters}}
 
         response = await self.opensearch_client.search_raw(search_body)
         return response["hits"]["hits"]
 
-    def _apply_rrf_fusion(self, bm25_hits: List[Dict[str, Any]], vector_hits: List[Dict[str, Any]], target_size: int) -> List[Dict[str, Any]]:
+    def _apply_rrf_fusion(
+        self, bm25_hits: List[Dict[str, Any]], vector_hits: List[Dict[str, Any]], target_size: int
+    ) -> List[Dict[str, Any]]:
         """Apply Reciprocal Rank Fusion to combine BM25 and vector search results."""
         # Create ranking maps
         bm25_ranks = {hit["_id"]: i + 1 for i, hit in enumerate(bm25_hits)}
         vector_ranks = {hit["_id"]: i + 1 for i, hit in enumerate(vector_hits)}
-        
+
         # Collect all unique documents
-        all_docs = {}
+        all_docs: Dict[str, Dict[str, Any]] = {}
         for hit in bm25_hits:
             all_docs[hit["_id"]] = hit
         for hit in vector_hits:
             all_docs[hit["_id"]] = hit
-        
+
         # Calculate RRF scores
-        rrf_scores = {}
+        rrf_scores: Dict[str, float] = {}
         for doc_id in all_docs:
             bm25_rank = bm25_ranks.get(doc_id, len(bm25_hits) + 1)
             vector_rank = vector_ranks.get(doc_id, len(vector_hits) + 1)
-            
+
             # RRF formula: 1/(rank + k) where k is typically 60
-            rrf_score = (1.0 / (bm25_rank + self.rrf_rank_constant)) + (1.0 / (vector_rank + self.rrf_rank_constant))
+            rrf_score: float = (1.0 / (bm25_rank + self.rrf_rank_constant)) + (
+                1.0 / (vector_rank + self.rrf_rank_constant)
+            )
             rrf_scores[doc_id] = rrf_score
-        
+
         # Sort by RRF score (descending)
         sorted_docs = sorted(all_docs.items(), key=lambda x: rrf_scores[x[0]], reverse=True)
-        
+
         # Return top results with RRF score as _score
-        fused_results = []
-        for doc_id, hit in sorted_docs[:target_size * 2]:  # Get more for pagination
+        fused_results: List[Dict[str, Any]] = []
+        for doc_id, hit in sorted_docs[: target_size * 2]:  # Get more for pagination
             hit["_score"] = rrf_scores[doc_id]
             fused_results.append(hit)
-        
+
         return fused_results
-    
+
     def _is_japanese_query(self, query_text: str) -> bool:
         """Check if the query contains Japanese characters."""
         import re
-        japanese_pattern = re.compile(r'[ひらがなカタカナ一-龯]')
+
+        japanese_pattern = re.compile(r"[ひらがなカタカナ一-龯]")
         japanese_chars = len(japanese_pattern.findall(query_text))
-        total_chars = len(query_text.replace(' ', ''))  # Exclude spaces
-        
+        total_chars = len(query_text.replace(" ", ""))  # Exclude spaces
+
         # Consider it Japanese if more than 30% of non-space characters are Japanese
         return japanese_chars > 0 and (japanese_chars / max(total_chars, 1)) > 0.3
 
@@ -242,26 +245,21 @@ class SearchService:
 
         # Apply pagination
         total_hits = len(fused_results)
-        paginated_hits = fused_results[from_:from_ + query.size]
+        paginated_hits = fused_results[from_ : from_ + query.size]
 
         # Format as OpenSearch response
-        return {
-            "hits": {
-                "total": {"value": total_hits, "relation": "eq"},
-                "hits": paginated_hits
-            }
-        }
+        return {"hits": {"total": {"value": total_hits, "relation": "eq"}, "hits": paginated_hits}}
 
     async def _bm25_search(self, query: SearchQuery, from_: int) -> Dict[str, Any]:
         """Perform BM25 text search only."""
-        
+
         # Detect if query contains Japanese characters
         is_japanese_query = self._is_japanese_query(query.q)
-        
+
         # Choose appropriate fields based on language
         if is_japanese_query:
             title_field = "title"  # Uses japanese_analyzer
-            content_field = "content"  # Uses japanese_analyzer  
+            content_field = "content"  # Uses japanese_analyzer
             keywords_field = "keywords"  # Uses japanese_analyzer
             multi_match_fields = ["title^2", "content", "keywords"]
             fuzziness = "0"  # No fuzziness for Japanese
@@ -272,7 +270,7 @@ class SearchService:
             multi_match_fields = ["title.standard^2", "content.standard", "keywords.standard"]
             fuzziness = "AUTO"  # Use fuzziness for English
 
-        search_body = {
+        search_body: Dict[str, Any] = {
             "size": min(query.size, self.max_results),
             "from": from_,
             "query": {
@@ -301,7 +299,7 @@ class SearchService:
         }
 
         # Add filters based on existing schema
-        filters = []
+        filters: List[Dict[str, Any]] = []
         if query.lang:
             filters.append({"term": {"language": query.lang}})
         if query.site:
@@ -317,38 +315,46 @@ class SearchService:
 
         # Add sorting if specified
         if query.sort:
+            sort_config: List[Dict[str, Dict[str, str]]] = []
             if query.sort == "_score":
-                search_body["sort"] = [{"_score": {"order": "desc"}}]
+                sort_config = [{"_score": {"order": "desc"}}]
             elif query.sort == "published_at":
-                search_body["sort"] = [{"fetched_at": {"order": "desc"}}]  # Use fetched_at as proxy
+                sort_config = [{"fetched_at": {"order": "desc"}}]  # Use fetched_at as proxy
             elif query.sort == "popularity_score":
-                search_body["sort"] = [{"processing_priority": {"order": "desc"}}]  # Use priority as proxy
+                sort_config = [{"processing_priority": {"order": "desc"}}]  # Use priority as proxy
+            search_body["sort"] = sort_config
 
         # Execute search
         return await self.opensearch_client.search_raw(search_body)
 
     def _build_filters(self, filters: Dict[str, Any]) -> Dict[str, Any]:
         """Build OpenSearch filter query from filter parameters."""
-        filter_clauses = []
+        filter_clauses: List[Dict[str, Any]] = []
 
         # Domain filter
         if "domain" in filters:
-            domains = filters["domain"] if isinstance(filters["domain"], list) else [filters["domain"]]
+            domains: List[str] = (
+                list(filters["domain"]) if isinstance(filters["domain"], list) else [str(filters["domain"])]  # type: ignore
+            )  # type: ignore
             filter_clauses.append({"terms": {"domain": domains}})
 
         # Language filter
         if "language" in filters:
-            languages = filters["language"] if isinstance(filters["language"], list) else [filters["language"]]
+            languages: List[str] = (  # type: ignore
+                filters["language"] if isinstance(filters["language"], list) else [filters["language"]]
+            )  # type: ignore
             filter_clauses.append({"terms": {"language": languages}})
 
         # Categories filter
         if "categories" in filters:
-            categories = filters["categories"] if isinstance(filters["categories"], list) else [filters["categories"]]
+            categories: List[str] = (  # type: ignore
+                filters["categories"] if isinstance(filters["categories"], list) else [filters["categories"]]
+            )  # type: ignore
             filter_clauses.append({"terms": {"categories": categories}})
 
         # Date range filter
         if "date_from" in filters or "date_to" in filters:
-            date_filter = {"range": {"fetched_at": {}}}
+            date_filter: Dict[str, Dict[str, Dict[str, Any]]] = {"range": {"fetched_at": {}}}
             if "date_from" in filters:
                 date_filter["range"]["fetched_at"]["gte"] = filters["date_from"]
             if "date_to" in filters:
@@ -379,7 +385,7 @@ class SearchService:
 
             response = await self.opensearch_client.search_raw(search_body)
 
-            suggestions = set()
+            suggestions: set[str] = set()
 
             # Extract title suggestions
             for suggestion in response.get("suggest", {}).get("title_suggest", []):

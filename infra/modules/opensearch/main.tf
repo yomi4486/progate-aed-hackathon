@@ -200,23 +200,24 @@ resource "aws_opensearch_domain" "this" {
     tls_security_policy = var.use_localstack ? "Policy-Min-TLS-1-0-2019-07" : "Policy-Min-TLS-1-2-2019-07"
   }
 
-  log_publishing_options {
-    cloudwatch_log_group_arn = var.use_localstack ? null : aws_cloudwatch_log_group.opensearch_logs[0].arn
-    log_type                 = "INDEX_SLOW_LOGS"
-    enabled                  = var.use_localstack ? false : true
-  }
+  # Temporarily disable logging to avoid permissions issues
+  # log_publishing_options {
+  #   cloudwatch_log_group_arn = var.use_localstack ? null : aws_cloudwatch_log_group.opensearch_logs[0].arn
+  #   log_type                 = "INDEX_SLOW_LOGS"
+  #   enabled                  = var.use_localstack ? false : true
+  # }
 
-  log_publishing_options {
-    cloudwatch_log_group_arn = var.use_localstack ? null : aws_cloudwatch_log_group.opensearch_logs[0].arn
-    log_type                 = "SEARCH_SLOW_LOGS" 
-    enabled                  = var.use_localstack ? false : true
-  }
+  # log_publishing_options {
+  #   cloudwatch_log_group_arn = var.use_localstack ? null : aws_cloudwatch_log_group.opensearch_logs[0].arn
+  #   log_type                 = "SEARCH_SLOW_LOGS" 
+  #   enabled                  = var.use_localstack ? false : true
+  # }
 
-  log_publishing_options {
-    cloudwatch_log_group_arn = var.use_localstack ? null : aws_cloudwatch_log_group.opensearch_logs[0].arn
-    log_type                 = "ES_APPLICATION_LOGS"
-    enabled                  = var.use_localstack ? false : true
-  }
+  # log_publishing_options {
+  #   cloudwatch_log_group_arn = var.use_localstack ? null : aws_cloudwatch_log_group.opensearch_logs[0].arn
+  #   log_type                 = "ES_APPLICATION_LOGS"
+  #   enabled                  = var.use_localstack ? false : true
+  # }
 
   snapshot_options {
     automated_snapshot_start_hour = 3  # 3 AM UTC
@@ -269,6 +270,34 @@ resource "aws_cloudwatch_log_group" "opensearch_logs" {
     Environment = var.environment
     Project     = "aedhack"
   }
+}
+
+# CloudWatch log resource policy for OpenSearch
+resource "aws_cloudwatch_log_resource_policy" "opensearch_logs_policy" {
+  count           = var.use_localstack ? 0 : 1
+  policy_name     = "${local.domain_name}-opensearch-logs-policy"
+  policy_document = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "opensearch.amazonaws.com"
+        }
+        Action = [
+          "logs:PutLogEvents",
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream"
+        ]
+        Resource = "arn:aws:logs:*:*:log-group:/aws/opensearch/domains/${local.domain_name}*"
+        Condition = {
+          ArnLike = {
+            "aws:SourceArn" = "arn:aws:es:*:*:domain/${local.domain_name}/*"
+          }
+        }
+      }
+    ]
+  })
 }
 
 # IAM role for OpenSearch access

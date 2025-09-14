@@ -28,7 +28,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "aioresponses>=0.7.8",
-    "boto3-stubs[dynamodb,essential]>=1.40.26",
+    "boto3-stubs[bedrock-runtime,dynamodb,essential]>=1.40.26",
     "progate-aed-hackathon",
     "pyright>=1.1.405",
     "pytest>=8.4.2",

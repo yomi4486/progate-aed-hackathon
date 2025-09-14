@@ -5,10 +5,11 @@ Bedrock client for generating text embeddings using Amazon Titan.
 import asyncio
 import json
 import logging
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import boto3
 from botocore.exceptions import ClientError
+from mypy_boto3_bedrock_runtime import BedrockRuntimeClient
 
 from .config import BedrockConfig
 
@@ -20,12 +21,15 @@ class BedrockClient:
     Client for Amazon Bedrock embedding generation.
     """
 
-    def __init__(self, config: BedrockConfig):
+    def __init__(self, config: Optional[BedrockConfig]):
         self.config = config
-        self.client = boto3.client("bedrock-runtime", region_name=config.region)
+        if config:
+            self.client: Optional[BedrockRuntimeClient] = boto3.client("bedrock-runtime", region_name=config.region)  # type: ignore
+        else:
+            self.client = None
 
         # Model configurations
-        self.model_configs = {
+        self.model_configs: Dict[str, Dict[str, Any]] = {
             "amazon.titan-embed-text-v1": {
                 "model_id": "amazon.titan-embed-text-v1",
                 "max_input_length": 8192,
@@ -40,9 +44,11 @@ class BedrockClient:
             },
         }
 
-        self.current_model = self.model_configs.get(config.embedding_model)
-        if not self.current_model:
-            raise ValueError(f"Unsupported embedding model: {config.embedding_model}")
+        self.current_model: Optional[Dict[str, Any]] = None
+        if config:
+            self.current_model = self.model_configs.get(config.embedding_model)
+            if not self.current_model:
+                raise ValueError(f"Unsupported embedding model: {config.embedding_model}")
 
     async def generate_embeddings(self, text: str) -> Optional[List[float]]:
         """
@@ -74,6 +80,9 @@ class BedrockClient:
 
     def _generate_embeddings_sync(self, text: str) -> List[float]:
         """Synchronous embedding generation."""
+        if not self.client or not self.current_model:
+            raise RuntimeError("BedrockClient not properly initialized")
+
         try:
             # Prepare request body based on model
             if self.current_model["request_format"] == "titan":
@@ -106,7 +115,7 @@ class BedrockClient:
                 return []
 
         except ClientError as e:
-            error_code = e.response["Error"]["Code"]
+            error_code = e.response.get("Error", {}).get("Code", "UnknownError")
             if error_code == "ValidationException":
                 logger.error(f"Input validation failed: {e}")
             elif error_code == "ThrottlingException":
@@ -140,22 +149,27 @@ class BedrockClient:
                 await asyncio.sleep(0.1)  # Small delay to avoid rate limiting
 
         tasks = [generate_with_semaphore(text) for text in texts]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        results: List[Union[List[float], None, BaseException]] = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Convert exceptions to None
-        processed_results = []
+        processed_results: List[Optional[List[float]]] = []
         for result in results:
             if isinstance(result, Exception):
                 logger.error(f"Embedding generation failed: {result}")
                 processed_results.append(None)
             else:
-                processed_results.append(result)
+                if not isinstance(result, BaseException):
+                    processed_results.append(result)
+                else:
+                    processed_results.append(None)
 
         return processed_results
 
     def _truncate_text(self, text: str) -> str:
         """Truncate text to fit within model limits."""
-        max_length = self.current_model["max_input_length"]
+        if not self.current_model:
+            return text
+        max_length: int = self.current_model["max_input_length"]
 
         if len(text) <= max_length:
             return text
@@ -172,6 +186,8 @@ class BedrockClient:
 
     def get_embedding_dimension(self) -> int:
         """Get the embedding dimension for the current model."""
+        if self.current_model is None:
+            raise RuntimeError("Current model is not set")
         return self.current_model["embedding_dimension"]
 
     async def test_connection(self) -> bool:

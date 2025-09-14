@@ -206,6 +206,9 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+bedrock-runtime = [
+    { name = "mypy-boto3-bedrock-runtime" },
+]
 dynamodb = [
     { name = "mypy-boto3-dynamodb" },
 ]
@@ -731,6 +734,15 @@ wheels = [
 ]
 
 [[package]]
+name = "mypy-boto3-bedrock-runtime"
+version = "1.40.21"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/ff/074a1e1425d04e7294c962803655e85e20e158734534ce8d302efaa8230a/mypy_boto3_bedrock_runtime-1.40.21.tar.gz", hash = "sha256:fa9401e86d42484a53803b1dba0782d023ab35c817256e707fbe4fff88aeb881", size = 28326, upload-time = "2025-08-29T19:25:09.405Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/80/02/9d3b881bee5552600c6f456e446069d5beffd2b7862b99e1e945d60d6a9b/mypy_boto3_bedrock_runtime-1.40.21-py3-none-any.whl", hash = "sha256:4c9ea181ef00cb3d15f9b051a50e3b78272122d24cd24ac34938efe6ddfecc62", size = 34149, upload-time = "2025-08-29T19:25:03.941Z" },
+]
+
+[[package]]
 name = "mypy-boto3-cloudformation"
 version = "1.40.24"
 source = { registry = "https://pypi.org/simple" }
@@ -848,7 +860,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "aioresponses" },
-    { name = "boto3-stubs", extra = ["dynamodb", "essential"] },
+    { name = "boto3-stubs", extra = ["bedrock-runtime", "dynamodb", "essential"] },
     { name = "progate-aed-hackathon" },
     { name = "pyright" },
     { name = "pytest" },
@@ -882,7 +894,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "aioresponses", specifier = ">=0.7.8" },
-    { name = "boto3-stubs", extras = ["dynamodb", "essential"], specifier = ">=1.40.26" },
+    { name = "boto3-stubs", extras = ["bedrock-runtime", "dynamodb", "essential"], specifier = ">=1.40.26" },
     { name = "progate-aed-hackathon", editable = "." },
     { name = "pyright", specifier = ">=1.1.405" },
     { name = "pytest", specifier = ">=8.4.2" },

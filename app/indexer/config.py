@@ -2,6 +2,8 @@
 Configuration management for the indexer service.
 """
 
+from __future__ import annotations
+
 import os
 from dataclasses import dataclass
 from typing import Optional
@@ -50,6 +52,11 @@ class IndexerConfig:
     enable_content_preprocessing: bool = True
     bedrock_config: Optional[BedrockConfig] = None
 
+    # New configuration sections
+    dlq_config: Optional[DLQConfig] = None
+    metrics_config: Optional[MetricsConfig] = None
+    chunking_config: Optional[ChunkingConfig] = None
+
     @classmethod
     def from_environment(cls) -> "IndexerConfig":
         """Create configuration from environment variables."""
@@ -86,6 +93,11 @@ class IndexerConfig:
                 embedding_model=os.getenv("INDEXER_BEDROCK_EMBEDDING_MODEL", "amazon.titan-embed-text-v1"),
             )
 
+        # Initialize additional configurations
+        dlq_config = DLQConfig()
+        metrics_config = MetricsConfig()
+        chunking_config = ChunkingConfig()
+
         return cls(
             aws_region=os.getenv("INDEXER_AWS_REGION", "us-east-1"),
             sqs_indexing_queue_url=sqs_indexing_queue_url,
@@ -98,4 +110,41 @@ class IndexerConfig:
             enable_content_preprocessing=os.getenv("INDEXER_ENABLE_CONTENT_PREPROCESSING", "true").lower() == "true",
             opensearch_config=opensearch_config,
             bedrock_config=bedrock_config,
+            dlq_config=dlq_config,
+            metrics_config=metrics_config,
+            chunking_config=chunking_config,
         )
+
+
+class DLQConfig:
+    """Configuration for Dead Letter Queue handling."""
+
+    def __init__(self):
+        self.dlq_url: Optional[str] = os.getenv("SQS_DLQ_URL")
+        self.max_retry_attempts: int = int(os.getenv("MAX_RETRY_ATTEMPTS", "3"))
+        self.retry_backoff_base: float = float(os.getenv("RETRY_BACKOFF_BASE", "2.0"))
+        self.retry_backoff_max_delay: int = int(os.getenv("RETRY_BACKOFF_MAX_DELAY", "300"))
+        self.enable_dlq: bool = os.getenv("ENABLE_DLQ", "true").lower() == "true"
+
+
+class MetricsConfig:
+    """Configuration for metrics collection."""
+
+    def __init__(self):
+        self.enable_metrics: bool = os.getenv("ENABLE_METRICS", "true").lower() == "true"
+        self.metrics_port: int = int(os.getenv("METRICS_PORT", "8080"))
+        self.metrics_path: str = os.getenv("METRICS_PATH", "/metrics")
+        self.health_check_path: str = os.getenv("HEALTH_CHECK_PATH", "/health")
+        self.newrelic_app_name: Optional[str] = os.getenv("NEW_RELIC_APP_NAME")
+        self.newrelic_license_key: Optional[str] = os.getenv("NEW_RELIC_LICENSE_KEY")
+        self.enable_newrelic: bool = all([self.newrelic_app_name, self.newrelic_license_key])
+
+
+class ChunkingConfig:
+    """Configuration for text chunking."""
+
+    def __init__(self):
+        self.max_chunk_size: int = int(os.getenv("MAX_CHUNK_SIZE", "8000"))  # Safe limit for embeddings
+        self.chunk_overlap: int = int(os.getenv("CHUNK_OVERLAP", "200"))  # Overlap between chunks
+        self.enable_chunking: bool = os.getenv("ENABLE_CHUNKING", "true").lower() == "true"
+        self.chunk_strategy: str = os.getenv("CHUNK_STRATEGY", "semantic")  # "semantic", "fixed", "sentence"

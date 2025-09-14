@@ -7,6 +7,7 @@ checking connections, and preparing the service for operation.
 
 import asyncio
 import logging
+from types import FrameType
 from typing import Optional, Tuple
 
 from .bedrock_client import BedrockClient
@@ -139,7 +140,7 @@ async def initialize_indexer_service(config: IndexerConfig) -> bool:
 
         # Initialize templates
         template_success = await initialize_opensearch_templates(
-            opensearch_client, environment=config.environment, embedding_dimension=embedding_dimension
+            opensearch_client, environment="dev", embedding_dimension=embedding_dimension
         )
 
         await opensearch_client.close()
@@ -174,7 +175,7 @@ def setup_startup_hooks():
     """
     import signal
 
-    def signal_handler(signum, frame):
+    def signal_handler(signum: int, _: Optional[FrameType]) -> None:
         logger.info(f"Received signal {signum}, initiating graceful shutdown...")
         # Note: In a real service, this would trigger the main loop to exit cleanly
 
@@ -223,7 +224,8 @@ async def initialize_for_environment(
         bedrock_config = BedrockConfig(region=bedrock_region, embedding_model="amazon.titan-embed-text-v1")
 
     indexer_config = IndexerConfig(
-        environment=environment,
+        sqs_indexing_queue_url="https://sqs.us-east-1.amazonaws.com/123456789012/indexing-queue",
+        s3_parsed_bucket="indexer-parsed-bucket",
         opensearch_config=opensearch_config,
         bedrock_config=bedrock_config,
         enable_embeddings=enable_embeddings,
@@ -248,6 +250,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     async def run_init():
+        # opensearch_endpoint は上でチェック済みなので None ではない
+        assert opensearch_endpoint is not None
         success = await initialize_for_environment(
             environment=environment,
             opensearch_endpoint=opensearch_endpoint,

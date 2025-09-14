@@ -5,19 +5,27 @@ variable "use_localstack" {
 }
 
 locals {
-  suffix = var.use_localstack ? "local" : "prod"
+  # Use timestamp suffix to ensure unique bucket names
+  timestamp_suffix = formatdate("YYYYMMDD-hhmm", timestamp())
+  suffix = var.use_localstack ? "local" : "useast1-${local.timestamp_suffix}"
 }
 
 resource "aws_s3_bucket" "raw" {
   bucket = "${var.name_prefix}-raw-${local.suffix}"
+  
+  provider = aws
 }
 
 resource "aws_s3_bucket" "parsed" {
   bucket = "${var.name_prefix}-parsed-${local.suffix}"
+  
+  provider = aws
 }
 
 resource "aws_s3_bucket" "index_ready" {
   bucket = "${var.name_prefix}-index-ready-${local.suffix}"
+  
+  provider = aws
 }
 
 resource "aws_s3_bucket_versioning" "this" {

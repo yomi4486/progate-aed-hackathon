@@ -1,7 +1,7 @@
 # Variables moved to main.tf to avoid duplication
 
 provider "aws" {
-  region                      = var.aws_region
+  region                      = "us-east-1"  # Explicitly set region for debugging
   access_key                  = var.use_localstack ? "test" : null
   secret_key                  = var.use_localstack ? "test" : null
   skip_credentials_validation = var.use_localstack

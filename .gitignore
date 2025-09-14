@@ -11,6 +11,7 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 infra/tfplan
+infra/.terraform.tfstate.lock.info
 
 # LocalStack
 localstack_data/
