@@ -1,0 +1,62 @@
+# Local crawler configuration
+# No AWS services required - uses local file-based implementations
+
+# Environment and mode
+environment: "local"
+run_mode: "local"
+
+# Local storage paths
+local_storage_path: "./local_data"
+local_queue_file: "./local_data/crawl_queue.json"
+local_state_file: "./local_data/url_states.json"
+
+# HTTP Configuration
+max_concurrent_requests: 5
+request_timeout: 30
+user_agent: "AEDHack-LocalCrawler/1.0"
+
+# Rate Limiting (in-memory)
+default_qps_per_domain: 2
+domain_qps_overrides: {}
+rate_limiter_enabled: false  # Disable Redis-based rate limiting
+
+# Retry Configuration
+max_retries: 3
+base_backoff_seconds: 5     # Shorter backoff for local testing
+max_backoff_seconds: 300
+
+# Locking Configuration
+acquisition_ttl_seconds: 300  # Shorter TTL for local testing
+heartbeat_interval_seconds: 10
+
+# Content Processing
+max_content_length: 10485760  # 10MB for local testing
+default_language: "ja"
+language_detection_confidence: 0.7
+
+# Logging
+log_level: "DEBUG"
+json_logs: false  # More readable for local development
+
+# Health Check
+health_check_port: 8080
+health_check_enabled: true
+
+# Monitoring
+metrics_enabled: true
+metrics_interval_seconds: 60
+
+# Redis Configuration (disabled for local mode)
+redis_url: null
+redis_db: 0
+redis_password: null
+
+# AWS Configuration (not used in local mode)
+aws_region: "us-east-1"
+dynamodb_table: null
+sqs_crawl_queue_url: null
+sqs_discovery_queue_url: null  
+sqs_indexing_queue_url: null
+s3_raw_bucket: null
+s3_parsed_bucket: null
+localstack_endpoint: null

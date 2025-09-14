@@ -30,7 +30,13 @@ class CrawlerSettings(BaseSettings):
     )
 
     # Environment
-    environment: str = Field("dev", description="Environment name (dev/staging/prod)")
+    environment: str = Field("dev", description="Environment name (dev/staging/prod/local)")
+
+    # Local Mode Configuration
+    run_mode: str = Field("aws", description="Run mode: aws/local/hybrid")
+    local_storage_path: Path = Field(Path("./local_data"), description="Local storage directory")
+    local_queue_file: Path = Field(Path("./crawl_queue.json"), description="Local queue JSON file")
+    local_state_file: Path = Field(Path("./url_states.json"), description="Local state JSON file")
 
     # AWS Configuration
     aws_region: str = Field("us-east-1")
@@ -39,12 +45,12 @@ class CrawlerSettings(BaseSettings):
     aws_session_token: Optional[str] = None
     localstack_endpoint: Optional[str] = Field(None, description="LocalStack endpoint for local development")
 
-    # Required AWS Resources
-    dynamodb_table: str = Field(..., description="DynamoDB table name for URL states")
-    sqs_crawl_queue_url: str = Field(..., description="SQS queue URL for crawl tasks")
+    # AWS Resources (optional in local mode)
+    dynamodb_table: Optional[str] = Field(None, description="DynamoDB table name for URL states")
+    sqs_crawl_queue_url: Optional[str] = Field(None, description="SQS queue URL for crawl tasks")
     sqs_discovery_queue_url: Optional[str] = Field(None, description="SQS queue URL for domain discovery")
     sqs_indexing_queue_url: Optional[str] = Field(None, description="SQS queue URL for indexing tasks")
-    s3_raw_bucket: str = Field(..., description="S3 bucket for raw HTML content")
+    s3_raw_bucket: Optional[str] = Field(None, description="S3 bucket for raw HTML content")
     s3_parsed_bucket: Optional[str] = Field(None, description="S3 bucket for parsed content (for indexing)")
 
     # Redis Configuration
@@ -102,9 +108,17 @@ class CrawlerSettings(BaseSettings):
     @field_validator("environment")
     @classmethod
     def validate_environment(cls, v: str) -> str:
-        valid_envs = ["dev", "devlocal", "staging", "prod"]
+        valid_envs = ["dev", "devlocal", "staging", "prod", "local"]
         if v not in valid_envs:
             raise ValueError(f"Invalid environment: {v}. Must be one of {valid_envs}")
+        return v
+
+    @field_validator("run_mode")
+    @classmethod
+    def validate_run_mode(cls, v: str) -> str:
+        valid_modes = ["aws", "local", "hybrid"]
+        if v not in valid_modes:
+            raise ValueError(f"Invalid run_mode: {v}. Must be one of {valid_modes}")
         return v
 
     @field_validator("domain_qps_overrides", mode="before")
@@ -127,7 +141,14 @@ class CrawlerSettings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_aws_config(self) -> "CrawlerSettings":
-        """Validate AWS configuration based on environment"""
+        """Validate AWS configuration based on environment and run mode"""
+        if self.run_mode == "local":
+            # Local mode - no AWS resources required
+            # But ensure local directories exist
+            self.local_storage_path.mkdir(parents=True, exist_ok=True)
+            return self
+        
+        # AWS mode validation
         if self.environment == "devlocal":
             # LocalStack development - require localstack_endpoint
             if not self.localstack_endpoint:
@@ -140,6 +161,13 @@ class CrawlerSettings(BaseSettings):
                 raise ValueError(
                     f"AWS credentials (access key or IAM role) required for {self.environment} environment"
                 )
+        
+        # Validate required AWS resources for AWS mode
+        if self.run_mode in ["aws", "hybrid"]:
+            required_aws_fields = ["dynamodb_table", "sqs_crawl_queue_url", "s3_raw_bucket"]
+            for field in required_aws_fields:
+                if getattr(self, field) is None:
+                    raise ValueError(f"{field} is required for {self.run_mode} mode")
 
         return self
 

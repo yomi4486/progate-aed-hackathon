@@ -53,7 +53,7 @@ module "ddb" {
 module "opensearch" {
   count         = var.use_localstack ? 0 : 1
   source        = "./modules/opensearch"
-  domain_name   = "${local.project}-${local.env}-search-${local.timestamp_suffix}"
+  domain_name   = "${local.project}-${local.env}-search"
   environment   = local.env
   vpc_id        = module.network.vpc_id
   subnet_ids    = [module.network.private_subnet_ids[0]]  # Single subnet for single-node deployment

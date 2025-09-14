@@ -34,8 +34,8 @@ output "cluster_security_group_id" {
 }
 
 output "node_security_group_id" {
-  description = "Security group ID attached to the EKS node group"
-  value       = aws_security_group.eks_nodes.id
+  description = "Security group ID attached to the EKS cluster (nodes use cluster security group)"
+  value       = aws_security_group.eks_cluster.id
 }
 
 output "node_group_arn" {
@@ -130,19 +130,19 @@ output "kubeconfig" {
 }
 
 # Add-on information
-output "vpc_cni_addon_arn" {
-  description = "Amazon Resource Name (ARN) of the VPC CNI addon"
-  value       = var.use_self_managed_cni ? null : aws_eks_addon.vpc_cni[0].arn
-}
-
 output "coredns_addon_arn" {
   description = "Amazon Resource Name (ARN) of the CoreDNS addon"
   value       = aws_eks_addon.coredns.arn
 }
 
 output "kube_proxy_addon_arn" {
-  description = "Amazon Resource Name (ARN) of the kube-proxy addon"
+  description = "Amazon Resource Name (ARN) of the kube-proxy addon"  
   value       = aws_eks_addon.kube_proxy.arn
+}
+
+output "vpc_cni_addon_arn" {
+  description = "Amazon Resource Name (ARN) of the VPC CNI addon"
+  value       = aws_eks_addon.vpc_cni.arn
 }
 
 output "ebs_csi_addon_arn" {
