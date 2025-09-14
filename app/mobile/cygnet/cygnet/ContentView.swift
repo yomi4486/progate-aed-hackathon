@@ -76,57 +76,58 @@ struct ContentView: View {
                             Text("No tabs open")
                         }
                     }
+                    // タブバーの高さ分だけ下に余白を取る
+                    .padding(.bottom, 60)
                 }
-                .edgesIgnoringSafeArea(.bottom)
-
-                // BottomNavigationBar
-                HStack(spacing: 32) {
-                    Button(action: goBack) {
-                        Image(systemName: "chevron.backward")
-                            .font(.system(size: 24, weight: .regular))
-                            .foregroundColor(canGoBack ? .accentColor : .gray)
-                    }
-                    .disabled(!canGoBack)
-
-                    Button(action: goForward) {
-                        Image(systemName: "chevron.forward")
-                            .font(.system(size: 24, weight: .regular))
-                            .foregroundColor(canGoForward ? .accentColor : .gray)
-                    }
-                    .disabled(!canGoForward)
-
-                    Button(action: addTab) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 28, weight: .regular))
-                            .foregroundColor(.accentColor)
-                    }
-
-                    Button(action: { showTabOverview = true }) {
-                        ZStack {
-                            Image(systemName: "square.on.square")
+                // タブバーをZStack直下に移動
+                VStack {
+                    Spacer()
+                    HStack(spacing: 32) {
+                        Button(action: goBack) {
+                            Image(systemName: "chevron.backward")
                                 .font(.system(size: 24, weight: .regular))
+                                .foregroundColor(canGoBack ? .accentColor : .gray)
+                        }
+                        .disabled(!canGoBack)
+
+                        Button(action: goForward) {
+                            Image(systemName: "chevron.forward")
+                                .font(.system(size: 24, weight: .regular))
+                                .foregroundColor(canGoForward ? .accentColor : .gray)
+                        }
+                        .disabled(!canGoForward)
+
+                        Button(action: addTab) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 28, weight: .regular))
                                 .foregroundColor(.accentColor)
-                            if tabs.count > 1 {
-                                Text("\(tabs.count)")
-                                    .font(.caption2.bold())
-                                    .foregroundColor(.white)
-                                    .padding(4)
-                                    .background(Color.red)
-                                    .clipShape(Circle())
-                                    .offset(x: 14, y: -14)
+                        }
+
+                        Button(action: { showTabOverview = true }) {
+                            ZStack {
+                                Image(systemName: "square.on.square")
+                                    .font(.system(size: 24, weight: .regular))
+                                    .foregroundColor(.accentColor)
+                                if tabs.count > 1 {
+                                    Text("\(tabs.count)")
+                                        .font(.caption2.bold())
+                                        .foregroundColor(.white)
+                                        .padding(4)
+                                        .background(Color.red)
+                                        .clipShape(Circle())
+                                        .offset(x: 14, y: -14)
+                                }
                             }
                         }
                     }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
+                    .background(
+                        Color(.systemBackground)
+                            .opacity(0.98)
+                            .shadow(color: Color.black.opacity(0.10), radius: 8, x: 0, y: -2)
+                    )
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.bottom, geo.safeAreaInsets.bottom + 8)
-                .padding(.top, 8)
-                .background(
-                    Color(.systemBackground)
-                        .opacity(0.98)
-                        .shadow(color: Color.black.opacity(0.10), radius: 8, x: 0, y: -2)
-                        .edgesIgnoringSafeArea(.bottom)
-                )
 
                 // タブ一覧ボトムシート
                 if showTabOverview {
