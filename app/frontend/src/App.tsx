@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, GeoJSON } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 import { FaSearch, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import './App.css';
 import { RPCClientImpl } from './rpc-client';
@@ -12,6 +14,36 @@ const baseURL = import.meta.env.VITE_API_BASE_URL!;
 const rpc = new RPCClientImpl(baseURL);
 
 function App() {
+  // 地図オーバーレイ用スタイル
+  const overlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    width: '100vw',
+    height: '100vh',
+    zIndex: 1,
+    pointerEvents: 'none',
+    background: 'rgba(255,255,255,0.8)',
+    mixBlendMode: 'lighten',
+  };
+  // GeoJSONデータをfetchで取得
+  const [geojsonData, setGeojsonData] = useState<any>(null);
+  useEffect(() => {
+    fetch('/src/assets/03_chihoukaijyouyohouku_kaiikipolygon.geojson')
+      .then(res => res.json())
+      .then(setGeojsonData)
+      .catch(() => setGeojsonData(null));
+  }, []);
+  // easteregg=warp ならランダムな場所にワープ
+  function getRandomLatLng(): [number, number] {
+    // 世界の緯度経度範囲
+    const lat = Math.random() * 180 - 90;
+    const lng = Math.random() * 360 - 180;
+    return [lat, lng];
+  }
+  const hasWarp = new URLSearchParams(window.location.search).get('easteregg') === 'warp';
+  const mapCenter = hasWarp ? getRandomLatLng() : [36.2048, 138.2529];
+  const mapZoom = 5;
   // クエリパラメータから初期値を取得
   function getParam(name: string, def: string = ''): string {
     const params = new URLSearchParams(window.location.search);
@@ -104,8 +136,47 @@ function App() {
   const logo = colorScheme === 'dark' ? logoDark : logoLight;
 
   return (
-    <div className="search-root">
-      <div className={`topmenu ${(searched || loading) ? "has-query" : "webhp"}`}> 
+    <div className="search-root" style={{ position: 'relative', minHeight: '100vh' }}>
+      {/* 背景地図 */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 0,
+      }}>
+        {geojsonData && (
+          <MapContainer
+            {...{
+              style: { width: '100vw', height: '100vh' },
+              center: mapCenter,
+              zoom: mapZoom,
+              zoomControl: false,
+              attributionControl: false,
+              dragging: false,
+              doubleClickZoom: false,
+              scrollWheelZoom: false,
+              boxZoom: false,
+              keyboard: false,
+            } as any}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              // @ts-ignore
+              attribution="&copy; OpenStreetMap contributors"
+            />
+            <GeoJSON
+              data={geojsonData as any}
+              // @ts-ignore
+              style={() => ({ color: '#007aff', weight: 1, fillOpacity: 0.2 })}
+            />
+          </MapContainer>
+        )}
+      </div>
+      {/* 地図オーバーレイ */}
+      <div style={overlayStyle}></div>
+  <div className={`topmenu ${(searched || loading) ? "has-query" : "webhp"}`} style={{ position: 'relative', zIndex: 1 }}>
         {!(searched || loading) ? (
           <div className="search-center">
             <header
@@ -158,7 +229,7 @@ function App() {
           </div>
         )}
       </div>
-      <main className="search-results">
+  <main className="search-results" style={{ position: 'relative', zIndex: 1 }}>
         <div style={{height:'30px'}}></div>
         {searched && results.length > 0 && (
           <div className="search-results-count">
