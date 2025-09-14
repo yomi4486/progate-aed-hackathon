@@ -64,8 +64,10 @@ struct ContentView: View {
                     ZStack {
                         if let tab = tabs.first(where: { $0.id == selectedTabId }) {
                             WebTabView(tab: tab)
+                                .id(tab.id) // ここでidを付与
                         } else if let firstTab = tabs.first {
                             WebTabView(tab: firstTab)
+                                .id(firstTab.id)
                         } else {
                             Text("No tabs open")
                         }
